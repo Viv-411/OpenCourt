@@ -1,0 +1,87 @@
+# OpenCourt sensor configuration. Copy to config/local.yaml (git-ignored) and edit.
+# Every key is optional; omitted keys use the defaults shown here.
+# Durations are in seconds. See docs/PLAN.md §5-§7 for what each rule means.
+
+site_id: demo-site            # must match a row in the backend `sites` table
+zones_file: config/zones.yaml # written by `opencourt calibrate` (relative to sensor/)
+
+smoothing:
+  window_seconds: 30          # rolling median for every count
+
+tracking:
+  zone_dwell_seconds: 1.0     # a zone change counts only after holding this long
+  track_ttl_seconds: 10       # forget a track unseen this long
+  handoff_radius_px: 60       # a new ID this close to a just-lost one inherits its zone
+  handoff_seconds: 1.5
+  excursion_seconds: 8        # leave a court and come back within this = no crossing
+
+queue:
+  min_people: 1
+  on_seconds: 60              # queue must be occupied this long before clocks start
+  off_seconds: 180            # ...and empty this long before clocks reset
+
+court:
+  occupied_min_people: 1.5    # smoothed count at/above this = occupied
+  players_per_group: 4        # 2 for singles
+
+rotation:                     # how court turnover is read (docs/PLAN.md §6)
+  fast_window_seconds: 6      # light smoothing to catch the brief empty spell on a court
+  empty_below_people: 0.5     # fast count below this = court empty
+  fill_confirm_seconds: 10    # people must stay this long to count as arriving (not walking through)
+  expected_fill_confirm_seconds: 3  # ...on a court a group is known to be moving onto
+  shift_window_seconds: 1800  # an open court above is where a group moves up to
+  restore_seconds: 180        # same group back from a break within this keeps its clock
+  arrival_timeout_seconds: 150  # a group moving up must arrive within this
+  evidence_min_people: 2      # crossings needed to believe where people came from
+  turnover_min_people: 3      # quick swap: this many left AND this many arrived from below
+  turnover_window_seconds: 120
+  turnover_check_seconds: 1
+  queue_lookback_seconds: 20
+  decide_delay_seconds: 10    # after a court empties, wait this long for crossings before deciding
+  decide_lookback_seconds: 30
+
+timer:
+  # Prototype rule: each group gets 20 minutes while someone is waiting (the user's choice).
+  # Game-end detection may replace this later (docs/PLAN.md §12).
+  threshold_seconds: 1200
+  warning_seconds: 120        # 0 disables the warning pulse
+
+estimate:
+  typical_game_seconds: 900   # PLACEHOLDER: set to the measured median game length
+  min_remaining_seconds: 60
+  overdue_remaining_seconds: 180
+
+health:
+  stale_frame_seconds: 10     # no frames this long = degraded, lights off
+
+lights:
+  driver: none                # none | console | gpio
+  pins: {}                    # court number -> BCM pin, e.g. {1: 17, 2: 27, 3: 22}
+  active_high: true
+  pulse_fade_seconds: 1.0
+
+backend:
+  enabled: false
+  url: ""                     # https://<project-ref>.supabase.co
+  anon_key_env: OPENCOURT_SUPABASE_ANON_KEY
+  device_token_env: OPENCOURT_DEVICE_TOKEN
+  heartbeat_seconds: 15
+  min_interval_seconds: 2
+
+detector:
+  model: yolo11n.pt           # on the Pi use the NCNN export: yolo11n_ncnn_model
+  tracker: trackers/bytetrack_opencourt.yaml
+  imgsz: 640
+  confidence: 0.25
+  device: null                # cpu | mps | null (auto)
+
+capture:
+  source: picamera            # picamera | usb | file
+  path: null                  # video path for `file`, device index for `usb`
+  width: 1920
+  height: 1080
+  target_fps: 8
+
+history:
+  path: data/history.jsonl    # counts and states once a minute; null disables
+  interval_seconds: 60

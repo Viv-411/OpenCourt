@@ -1,0 +1,13 @@
+# ByteTrack tuned for OpenCourt. Motion + box overlap only: no appearance features, no ReID.
+# (BoT-SORT is deliberately not used; see docs/PLAN.md §3.)
+#
+# Tuned for low frame rates (~8 FPS): players move a lot between frames, so matching is
+# looser and lost tracks are kept a little longer than the ultralytics defaults.
+# Re-tune against real footage with `opencourt replay`.
+tracker_type: bytetrack
+track_high_thresh: 0.25   # first-stage association threshold
+track_low_thresh: 0.1     # second-stage (low-confidence boxes) threshold
+new_track_thresh: 0.3     # confidence needed to start a new track
+track_buffer: 16          # frames to keep a lost track (~2 s at 8 FPS)
+match_thresh: 0.9         # IoU-distance gate; higher = looser matching (default 0.8)
+fuse_score: true

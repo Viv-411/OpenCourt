@@ -1,0 +1,308 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0C0A00000000000000000101 /* OpenCourtKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0C0A00000000000000000201 /* OpenCourtKit */; };
+		0C0A00000000000000000102 /* OpenCourtSupabase in Frameworks */ = {isa = PBXBuildFile; productRef = 0C0A00000000000000000202 /* OpenCourtSupabase */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0C0A00000000000000000001 /* OpenCourt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenCourt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C0A00000000000000000002 /* OpenCourt.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenCourt.xcconfig; sourceTree = "<group>"; };
+		0C0A00000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0C0A00000000000000000004 /* OpenCourtKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = OpenCourtKit; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		0C0A00000000000000000010 /* OpenCourt */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OpenCourt;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0C0A00000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C0A00000000000000000101 /* OpenCourtKit in Frameworks */,
+				0C0A00000000000000000102 /* OpenCourtSupabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0C0A00000000000000000030 = {
+			isa = PBXGroup;
+			children = (
+				0C0A00000000000000000010 /* OpenCourt */,
+				0C0A00000000000000000004 /* OpenCourtKit */,
+				0C0A00000000000000000032 /* Config */,
+				0C0A00000000000000000031 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0C0A00000000000000000031 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0C0A00000000000000000001 /* OpenCourt.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0C0A00000000000000000032 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				0C0A00000000000000000002 /* OpenCourt.xcconfig */,
+				0C0A00000000000000000003 /* Info.plist */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0C0A00000000000000000040 /* OpenCourt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0C0A00000000000000000060 /* Build configuration list for PBXNativeTarget "OpenCourt" */;
+			buildPhases = (
+				0C0A00000000000000000041 /* Sources */,
+				0C0A00000000000000000020 /* Frameworks */,
+				0C0A00000000000000000042 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0C0A00000000000000000010 /* OpenCourt */,
+			);
+			name = OpenCourt;
+			packageProductDependencies = (
+				0C0A00000000000000000201 /* OpenCourtKit */,
+				0C0A00000000000000000202 /* OpenCourtSupabase */,
+			);
+			productName = OpenCourt;
+			productReference = 0C0A00000000000000000001 /* OpenCourt.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0C0A00000000000000000050 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					0C0A00000000000000000040 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 0C0A00000000000000000070 /* Build configuration list for PBXProject "OpenCourt" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 0C0A00000000000000000030;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0C0A00000000000000000301 /* XCLocalSwiftPackageReference "OpenCourtKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0C0A00000000000000000031 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0C0A00000000000000000040 /* OpenCourt */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0C0A00000000000000000042 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0C0A00000000000000000041 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0C0A00000000000000000071 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C0A00000000000000000002 /* OpenCourt.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		0C0A00000000000000000072 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C0A00000000000000000002 /* OpenCourt.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		0C0A00000000000000000061 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C0A00000000000000000002 /* OpenCourt.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OpenCourt;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = app.opencourt.OpenCourt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0C0A00000000000000000062 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0C0A00000000000000000002 /* OpenCourt.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OpenCourt;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = app.opencourt.OpenCourt;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0C0A00000000000000000060 /* Build configuration list for PBXNativeTarget "OpenCourt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C0A00000000000000000061 /* Debug */,
+				0C0A00000000000000000062 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0C0A00000000000000000070 /* Build configuration list for PBXProject "OpenCourt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0C0A00000000000000000071 /* Debug */,
+				0C0A00000000000000000072 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		0C0A00000000000000000301 /* XCLocalSwiftPackageReference "OpenCourtKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = OpenCourtKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0C0A00000000000000000201 /* OpenCourtKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OpenCourtKit;
+		};
+		0C0A00000000000000000202 /* OpenCourtSupabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OpenCourtSupabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 0C0A00000000000000000050 /* Project object */;
+}
