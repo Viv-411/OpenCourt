@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "site_id": "demo-site",
+  "generated_at": 1790000000.0,
+  "health": "ok",
+  "queue": {
+    "count": 17.0,
+    "waiting": true
+  },
+  "wait": {
+    "next_free_seconds": 161,
+    "wait_seconds": 1080,
+    "groups_ahead": 5
+  },
+  "courts": [
+    {
+      "number": 1,
+      "state": "active",
+      "light": "off",
+      "occupancy": 4.0,
+      "clock_seconds": 368,
+      "seconds_remaining": 832,
+      "on_court_seconds": 368
+    },
+    {
+      "number": 2,
+      "state": "active",
+      "light": "off",
+      "occupancy": 3.0,
+      "clock_seconds": 542,
+      "seconds_remaining": 658,
+      "on_court_seconds": 542
+    },
+    {
+      "number": 3,
+      "state": "active",
+      "light": "off",
+      "occupancy": 4.0,
+      "clock_seconds": 739,
+      "seconds_remaining": 461,
+      "on_court_seconds": 739
+    },
+    {
+      "number": 4,
+      "state": "due",
+      "light": "solid",
+      "occupancy": 4.0,
+      "clock_seconds": 1200,
+      "seconds_remaining": 0,
+      "on_court_seconds": 1200
+    }
+  ]
+}

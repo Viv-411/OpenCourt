@@ -1,0 +1,7 @@
+// Shared build settings. Backend credentials come from Secrets.xcconfig (git-ignored):
+//   cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
+// Leave them empty to run on built-in demo data.
+SUPABASE_HOST =
+SUPABASE_ANON_KEY =
+
+#include? "Secrets.xcconfig"

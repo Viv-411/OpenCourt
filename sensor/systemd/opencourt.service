@@ -1,0 +1,26 @@
+# /etc/systemd/system/opencourt.service
+# Install:  sudo cp systemd/opencourt.service /etc/systemd/system/
+#           sudo systemctl daemon-reload && sudo systemctl enable --now opencourt
+# Logs:     journalctl -u opencourt -f
+[Unit]
+Description=OpenCourt sensor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=opencourt
+WorkingDirectory=/home/opencourt/OpenCourt/sensor
+# OPENCOURT_SUPABASE_ANON_KEY and OPENCOURT_DEVICE_TOKEN live here (chmod 600).
+EnvironmentFile=/etc/opencourt.env
+ExecStart=/home/opencourt/OpenCourt/sensor/.venv/bin/opencourt run --config config/local.yaml
+Restart=always
+RestartSec=5
+# The sensor never needs to write outside its data directory.
+ProtectSystem=strict
+ReadWritePaths=/home/opencourt/OpenCourt/sensor/data
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

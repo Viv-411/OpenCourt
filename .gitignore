@@ -1,0 +1,49 @@
+# Footage and anything derived from it never goes in git (privacy policy, docs/PLAN.md §3)
+data/
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.h264
+*.jpg
+*.jpeg
+*.png
+!ios/**/*.png
+!docs/**/*.png
+
+# Local config with secrets
+sensor/config/local*.yaml
+sensor/config/zones*.yaml
+!sensor/config/zones.example.yaml
+.env
+*.env
+!.env.example
+
+# Models
+*.pt
+*_ncnn_model/
+*.onnx
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# Swift / Xcode
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
+
+# iOS secrets
+ios/Config/Secrets.xcconfig
