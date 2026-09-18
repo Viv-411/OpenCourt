@@ -109,6 +109,10 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
 - The Python sandbox blocks `multiprocessing` pools. For parallel simulator runs, use
   separate processes (`xargs -P`).
 - The GitHub remote is `origin` → https://github.com/Viv-411/OpenCourt.git (branch `main`).
+- Supabase project `inkvqajxepcaqjubhfye` (us-west-2) has the schema applied. Keys/tokens live
+  in `ios/Config/Secrets.xcconfig` and `sensor/.env` (git-ignored); the DB password is not
+  stored anywhere in the repo — ask the user if DDL is needed (connect via the session pooler
+  with psycopg from `backend/`). Never commit keys or the password.
 
 ## User decisions (2026-09-16)
 

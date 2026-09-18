@@ -206,9 +206,13 @@ The tests check that:
 Open `ios/OpenCourt.xcodeproj` in Xcode, pick an iPhone simulator, and press Run. With no
 backend configured, it shows **demo data** and says so on screen.
 
-| Sites | A court whose time is up | Sensor offline | Quiet park |
+| Sites (demo) | A court whose time is up (demo) | Sensor offline (demo) | Live from Supabase |
 |---|---|---|---|
-| ![](screenshots/sites.png) | ![](screenshots/court-time-up.png) | ![](screenshots/sensor-offline.png) | ![](screenshots/quiet-site.png) |
+| ![](screenshots/sites.png) | ![](screenshots/court-time-up.png) | ![](screenshots/sensor-offline.png) | ![](screenshots/live-simulator-site.png) |
+
+With `ios/Config/Secrets.xcconfig` filled in (it is), the app reads your real Supabase
+project instead: the real parks appear as "No data yet" until a sensor reports, and the
+"Simulator" site goes live whenever `opencourt simulate --publish` is running.
 
 - Each court card shows its state, the players seen on it, the time on court while people
   waited, and a dot that mirrors the real light (off, pulsing, or solid).
@@ -249,10 +253,10 @@ scripts/test-all.sh --fast   # skip the 2-hour simulations
 
 ### Needs a quick setup from you
 
-- [ ] **Supabase:** the project exists and is linked to GitHub. Still needed from you: the
-      project URL (`https://<ref>.supabase.co`) and the anon key, so the app and the
-      simulator can point at it. Put them in `ios/Config/Secrets.xcconfig` and
-      `sensor/config/local.yaml`, or paste them to me.
+- [x] **Supabase:** schema applied, sites seeded, simulator device registered, app and
+      simulator connected (2026-09-17). `cd sensor && uv run opencourt simulate -c config/local.yaml
+      --publish --site sim-site --speed 8` feeds the live database; the app (built with
+      `ios/Config/Secrets.xcconfig` in place) shows it under "Simulator".
 - [ ] **Buy the hardware** (PLAN §8): a Pi 5, Camera Module 3 Wide, a mount, 12 V amber
       lights, and MOSFETs.
 - [ ] Optional: join the **Apple Developer Program** if you want TestFlight. A free account
@@ -264,7 +268,6 @@ scripts/test-all.sh --fast   # skip the 2-hour simulations
 |---|---|
 | Tune the line model on real footage | Footage + labels |
 | Pi setup: NCNN export, FPS check, GPIO lights, systemd service | Hardware |
-| Live backend + app end-to-end (`simulate --publish`) | Supabase project |
 | Multi-camera support for 8+ court banks | Design work (PLAN §12) |
 | Game-end detection (paddle tap), then maybe score tracking | Prototype running first (PLAN §12) |
 | Map polish, push notifications, busy-hour history | Later |
