@@ -114,6 +114,11 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
   stored anywhere in the repo — ask the user if DDL is needed (connect via the session pooler
   with psycopg from `backend/`). Never commit keys or the password.
 
+## Working style (user feedback, 2026-09-17)
+
+- Small, obvious improvements (wording, labels, a confusing display): just make them, don't
+  ask. Mention them in the summary.
+
 ## User decisions (2026-09-16)
 
 - The amber state reads **"Time up"**. The prototype gives each group 20 minutes while

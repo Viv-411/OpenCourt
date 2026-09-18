@@ -52,14 +52,20 @@ struct WaitSummary: View {
 
     var body: some View {
         HStack(alignment: .top) {
-            stat(title: "Wait if you arrive now",
-                 value: trustworthy ? WaitFormat.wait(site.waitSeconds).capitalizedFirst : "—",
-                 big: true)
+            VStack(alignment: .leading, spacing: 4) {
+                stat(title: "Wait if you arrive now",
+                     value: trustworthy ? WaitFormat.wait(site.waitSeconds).capitalizedFirst : "—",
+                     big: true)
+                if trustworthy, let ahead = site.groupsAhead, ahead > 0 {
+                    Text(ahead == 1 ? "1 group ahead of you" : "\(ahead) groups ahead of you")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Spacer()
             VStack(alignment: .trailing, spacing: 8) {
                 stat(title: "In line", value: trustworthy ? "\(site.peopleWaiting)" : "—")
-                stat(title: "Next court free",
-                     value: trustworthy ? nextFree : "—")
+                stat(title: nextFreeTitle, value: trustworthy ? nextFree : "—")
             }
         }
         .padding()
@@ -67,9 +73,18 @@ struct WaitSummary: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// A court that is open right now goes to whoever is already in line, so say that
+    /// instead of "free now" next to a non-zero wait.
+    private var courtOpenNow: Bool { (site.nextFreeSeconds ?? 60) < 60 }
+
+    private var nextFreeTitle: String {
+        courtOpenNow && site.peopleWaiting > 0 ? "Open court" : "Next court free"
+    }
+
     private var nextFree: String {
         guard let s = site.nextFreeSeconds else { return "—" }
-        return s < 60 ? "now" : "~" + WaitFormat.duration(TimeInterval(s))
+        if courtOpenNow { return site.peopleWaiting > 0 ? "line's turn" : "now" }
+        return "~" + WaitFormat.duration(TimeInterval(s))
     }
 
     private func stat(title: String, value: String, big: Bool = false) -> some View {

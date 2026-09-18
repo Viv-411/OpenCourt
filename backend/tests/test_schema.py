@@ -5,7 +5,7 @@ import psycopg
 import pytest
 
 
-def payload(site="demo-site", **over):
+def payload(site="sim-site", **over):
     p = {
         "version": 1,
         "site_id": site,
@@ -27,7 +27,7 @@ def as_role(conn, role):
     conn.execute(f"set role {role}")
 
 
-def register(conn, site="demo-site"):
+def register(conn, site="sim-site"):
     as_role(conn, "service_role")
     token = conn.execute("select public.register_device(%s, 'pi-1')", (site,)).fetchone()[0]
     conn.execute("reset role")
@@ -43,10 +43,10 @@ def test_device_can_publish_with_anon_role(db):
     as_role(db, "anon")
     ingest(db, token, payload())
     row = db.execute("select health, queue_count, wait_seconds, is_stale, court_count "
-                     "from public.site_overview where id = 'demo-site'").fetchone()
+                     "from public.site_overview where id = 'sim-site'").fetchone()
     assert row == ("ok", 6.0, 900, False, 4)
     states = db.execute("select number, state from public.court_status "
-                        "where site_id = 'demo-site' order by number").fetchall()
+                        "where site_id = 'sim-site' order by number").fetchall()
     assert states == [(1, "active"), (2, "active"), (3, "active"), (4, "active")]
 
 
@@ -75,10 +75,10 @@ def test_revoked_token_rejected(db):
 
 
 def test_device_cannot_write_another_site(db):
-    token = register(db, "demo-site")
+    token = register(db, "sim-site")
     as_role(db, "anon")
     with pytest.raises(psycopg.errors.InsufficientPrivilege):
-        ingest(db, token, payload(site="sim-site"))
+        ingest(db, token, payload(site="rick-drazner", courts=[]))
 
 
 def test_unknown_court_rejected(db):
@@ -120,7 +120,7 @@ def test_anon_cannot_see_devices_or_register(db):
     with pytest.raises(psycopg.errors.InsufficientPrivilege):
         db.execute("select * from public.devices")
     with pytest.raises(psycopg.errors.InsufficientPrivilege):
-        db.execute("select public.register_device('demo-site', 'x')")
+        db.execute("select public.register_device('sim-site', 'x')")
 
 
 def test_staleness(db):
@@ -131,7 +131,7 @@ def test_staleness(db):
     db.execute("update public.site_status set updated_at = now() - interval '5 minutes'")
     as_role(db, "anon")
     stale, age = db.execute("select is_stale, age_seconds from public.site_overview "
-                            "where id = 'demo-site'").fetchone()
+                            "where id = 'sim-site'").fetchone()
     assert stale and age >= 299
     # a site that never reported is stale too
     assert db.execute("select is_stale from public.site_overview "

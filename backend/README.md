@@ -35,7 +35,7 @@ The `supabase/` folder lives at the repo root so the Supabase GitHub integration
 - The publishable key lives in `ios/Config/Secrets.xcconfig` and `sensor/.env` (both git-ignored);
   the simulator's device token is in `sensor/.env`. The database password is not stored in the
   repo; ask the owner.
-- Sites seeded: `demo-site`, `sim-site` (4 courts each), `rick-drazner` (2), `mike-rylko` (8).
+- Sites seeded: `sim-site` (4 courts, fed by `opencourt simulate --publish`), `rick-drazner` (2), `mike-rylko` (8).
 
 ## Set up a project
 

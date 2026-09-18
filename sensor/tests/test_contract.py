@@ -20,7 +20,7 @@ def sample_payload() -> dict:
         snap = engine.step(obs)
         states = {c.signal.state.value for c in snap.courts}
         if snap.queue_waiting and "due" in states and snap.wait.wait_seconds:
-            return snap.to_payload("demo-site")
+            return snap.to_payload("sim-site")
     raise AssertionError("simulation never produced a busy snapshot")
 
 

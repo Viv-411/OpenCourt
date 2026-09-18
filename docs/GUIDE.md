@@ -244,9 +244,9 @@ scripts/test-all.sh --fast   # skip the 2-hour simulations
 
 - [ ] **Email Buffalo Grove Park District.** Ask for permission to film for development,
       and to run a supervised pilot. Include the privacy notes from PLAN §3.
-- [ ] **Record 30–60 minutes at Rick Drazner Park** (2 courts) to check camera height,
-      reach, and zone drawing. Then **1–2 hours at Mike Rylko** (8 courts) while people
-      are waiting; try two camera positions.
+- [ ] **Record footage at Rick Drazner Park** following [`FOOTAGE.md`](FOOTAGE.md): two
+      5-minute angle tests, then one 45–60 minute recording while people are waiting.
+      One court is enough to start.
 - [ ] **Label** departures and game start/end times (`sensor/labels/README.md`).
 - [ ] Decide the **light layout** (one per court, or a panel at the line) after seeing
       the site.
