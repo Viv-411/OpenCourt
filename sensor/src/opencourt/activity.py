@@ -52,8 +52,11 @@ class FastOccupancy:
 class CrossingLedger:
     """Recent zone crossings, kept for ``keep`` seconds, queryable per destination court."""
 
-    def __init__(self, keep: float):
+    def __init__(self, keep: float, transit_seconds: float = 60.0):
         self.keep = keep
+        # People walking from the line to a court often cross the walkway on the way. Within
+        # this long, a track that left the line still counts as coming from the line.
+        self.transit_seconds = transit_seconds
         self._items: deque[Crossing] = deque()
 
     def add(self, t: float, crossings: list[Crossing]) -> None:
@@ -61,25 +64,40 @@ class CrossingLedger:
         while self._items and self._items[0].t < t - self.keep:
             self._items.popleft()
 
+    def _came_from_queue(self, x: Crossing) -> bool:
+        """True when this track was waiting in the line shortly before stepping onto a court
+        — even if it crossed the walkway (and changed tracker ID) on the way."""
+        if x.from_zone == Zone.QUEUE:
+            return True
+        return x.queue_seen_t is not None and 0 <= x.t - x.queue_seen_t <= self.transit_seconds
+
+    def _left_line(self, since: float) -> int:
+        return sum(1 for x in self._items
+                   if x.from_zone == Zone.QUEUE and x.t >= since - self.transit_seconds)
+
     def into(self, court: int, since: float) -> FillEvidence:
         below = outside = queue = 0
         target = Zone.court(court)
         for x in self._items:
             if x.t < since or x.to_zone != target:
                 continue
+            # Someone who was just waiting in the line counts as coming off the line even if
+            # they walked across other courts to get here.
+            if self._came_from_queue(x):
+                queue += 1
+                continue
             src = court_number(x.from_zone)
             if src == court - 1:
                 below += 1
-            elif x.from_zone == Zone.QUEUE:
-                queue += 1
             elif src is None:
                 outside += 1
-        return FillEvidence(from_below=below, from_outside=outside, from_queue=queue)
+        return FillEvidence(from_below=below, from_outside=outside, from_queue=queue,
+                            left_line=self._left_line(since))
 
     def flows(self, court: int, since: float) -> Flows:
         """Everyone who crossed court ``court``'s boundary since ``since``, by direction."""
         f = dict(out_outside=0, out_down=0, out_up=0, in_below=0, in_above=0, in_queue=0,
-                 in_other=0)
+                 in_other=0, left_line=self._left_line(since))
         me = Zone.court(court)
         for x in self._items:
             if x.t < since:
@@ -93,13 +111,14 @@ class CrossingLedger:
                 elif other == court + 1:
                     f["out_up"] += 1
             elif x.to_zone == me:
+                if self._came_from_queue(x):
+                    f["in_queue"] += 1
+                    continue
                 other = court_number(x.from_zone)
                 if other == court - 1:
                     f["in_below"] += 1
                 elif other == court + 1:
                     f["in_above"] += 1
-                elif x.from_zone == Zone.QUEUE:
-                    f["in_queue"] += 1
                 else:
                     f["in_other"] += 1
         return Flows(**f)

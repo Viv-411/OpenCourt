@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .types import Crossing, Point, court_number
+from .types import Crossing, Point, Zone, court_number
 
 
 def _is_court(zone: str) -> bool:
@@ -39,6 +39,7 @@ class _TrackState:
     last_seen: float
     pos: Point
     handed_off: bool = False
+    queue_seen_t: float | None = None  # last time this track (or its predecessor) was in the line
     pending: Crossing | None = None  # court exit held back until it is clearly not an excursion
 
 
@@ -76,7 +77,7 @@ class CrossingDetector:
                     prev.handed_off = True
                     st = _TrackState(settled=prev.settled, candidate=prev.candidate,
                                      candidate_since=prev.candidate_since, last_seen=t, pos=pos,
-                                     pending=prev.pending)
+                                     pending=prev.pending, queue_seen_t=prev.queue_seen_t)
                     prev.pending = None
                 else:
                     st = _TrackState(settled=None, candidate=zone, candidate_since=t,
@@ -87,9 +88,12 @@ class CrossingDetector:
             if zone != st.candidate:
                 st.candidate = zone
                 st.candidate_since = t
+            if st.candidate == Zone.QUEUE:
+                st.queue_seen_t = t
             if st.candidate != st.settled and t - st.candidate_since >= self.dwell:
                 if st.settled is not None:
-                    self._settle(st, Crossing(t, tid, st.settled, st.candidate), out)
+                    self._settle(st, Crossing(t, tid, st.settled, st.candidate,
+                                              queue_seen_t=st.queue_seen_t), out)
                 st.settled = st.candidate
         for st in self._tracks.values():
             if st.pending is not None and t - st.pending.t > self.excursion_seconds:

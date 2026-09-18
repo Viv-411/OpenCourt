@@ -69,6 +69,10 @@ class Crossing:
     track_id: int
     from_zone: str
     to_zone: str
+    # When this track was last seen waiting in the line, if it was. Kept because people
+    # walking from the line to a court cross the walkway on the way (and often pick up a new
+    # tracker ID doing it), so ``from_zone`` alone loses where they actually came from.
+    queue_seen_t: float | None = None
 
 
 class CourtState(StrEnum):

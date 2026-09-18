@@ -8,8 +8,8 @@
     "waiting": true
   },
   "wait": {
-    "next_free_seconds": 161,
-    "wait_seconds": 1080,
+    "next_free_seconds": 180,
+    "wait_seconds": 1174,
     "groups_ahead": 5
   },
   "courts": [
@@ -17,28 +17,28 @@
       "number": 1,
       "state": "active",
       "light": "off",
-      "occupancy": 4.0,
-      "clock_seconds": 368,
-      "seconds_remaining": 832,
-      "on_court_seconds": 368
+      "occupancy": 2.0,
+      "clock_seconds": 240,
+      "seconds_remaining": 960,
+      "on_court_seconds": 240
     },
     {
       "number": 2,
       "state": "active",
       "light": "off",
-      "occupancy": 3.0,
-      "clock_seconds": 542,
-      "seconds_remaining": 658,
-      "on_court_seconds": 542
+      "occupancy": 4.0,
+      "clock_seconds": 482,
+      "seconds_remaining": 718,
+      "on_court_seconds": 482
     },
     {
       "number": 3,
       "state": "active",
       "light": "off",
       "occupancy": 4.0,
-      "clock_seconds": 739,
-      "seconds_remaining": 461,
-      "on_court_seconds": 739
+      "clock_seconds": 626,
+      "seconds_remaining": 574,
+      "on_court_seconds": 626
     },
     {
       "number": 4,

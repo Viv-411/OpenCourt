@@ -37,6 +37,7 @@ rotation:                     # how court turnover is read (docs/PLAN.md §6)
   turnover_window_seconds: 120
   turnover_check_seconds: 1
   queue_lookback_seconds: 20
+  queue_transit_seconds: 60   # someone who left the line counts as "from the line" this long
   decide_delay_seconds: 10    # after a court empties, wait this long for crossings before deciding
   decide_lookback_seconds: 30
 

@@ -9,7 +9,8 @@ What it models (docs/PLAN.md §2):
 * any number of courts, laid out in rows of up to four, numbered from the entrance/queue;
 * a group that finishes walks back toward the entrance along the lane between the court
   lines and the fence — through the lower courts' space when ``lane_in_zones`` is set;
-* the groups below then move up one court (mid-game) and the next group takes court 1;
+* when a court frees up it is taken either by the group below moving up (mid-game) or
+  straight off the line — ``shift_up_prob`` sets how often each custom is used;
 * parties of 1-4 arrive and merge into foursomes (occasionally a pair plays singles);
 * some groups quietly overstay; water breaks; ball chases; bystanders;
 * detector/tracker noise: misses, ID switches, false positives.
@@ -104,6 +105,9 @@ class SimParams:
     party_sizes: dict[int, float] = field(
         default_factory=lambda: {1: 0.15, 2: 0.35, 3: 0.1, 4: 0.4}
     )
+    # How often a freed court is taken by the group below moving up, rather than straight
+    # off the line. 1.0 = always shift up (a strict cascade), 0.0 = always direct.
+    shift_up_prob: float = 0.8
     singles_prob: float = 0.06  # a forming group plays as a pair
     start_short_group_after: float = 300.0  # an incomplete group plays after waiting this long
     breaks_per_court_hour: float = 1.0
@@ -197,6 +201,7 @@ class CourtSim:
         self.groups: list[_Group] = []
         self.slots: dict[int, _Group | None] = {c: None for c in range(1, self.n + 1)}
         self.queue: list[_Group] = []
+        self._fill_choice: dict[int, str] = {}
         self.departures: list[TruthDeparture] = []
         self.finished: list[TruthGroup] = []
         self.bystanders = [self._person(self._rand_other()) for _ in range(p.bystanders)]
@@ -348,37 +353,50 @@ class CourtSim:
                     m.go(*self._exit_path(c, m.pos))
                     m.return_to = None
 
-        # Shift-up: fill empty courts from the court below, top-down; court 1 from the queue.
+        # Fill empty courts, top-down. Each freed court is taken either by the group below
+        # moving up, or by the next group off the line walking straight onto it.
         for c in range(self.n, 0, -1):
             if self.slots[c] is not None:
                 continue
-            if c > 1:
-                below = self.slots.get(c - 1)
-                if below is None or below.state != "playing" or below.on_break:
+            choice = self._fill_choice.get(c)
+            if choice is None:
+                choice = "shift" if (c > 1 and rng.random() < p.shift_up_prob) else "line"
+                self._fill_choice[c] = choice
+            if choice == "shift":
+                mover = self.slots.get(c - 1)
+                if mover is None or mover.state != "playing" or mover.on_break:
                     continue
             else:
-                below = self.queue[0] if self.queue else None
-                if below is None or not self._arrived(below) or not below.members:
+                mover = self.queue[0] if self.queue else None
+                if mover is None or not self._arrived(mover) or not mover.members:
                     continue
-                if not below.full and t - below.queued_at < p.start_short_group_after:
+                if not mover.full and t - mover.queued_at < p.start_short_group_after:
                     continue
-            if below.ready_at == 0.0:
-                below.ready_at = t + rng.uniform(*p.shift_delay)
+            if mover.ready_at == 0.0:
+                mover.ready_at = t + rng.uniform(*p.shift_delay)
                 continue
-            if t < below.ready_at:
+            if t < mover.ready_at:
                 continue
-            below.ready_at = 0.0
-            if c > 1:
+            mover.ready_at = 0.0
+            del self._fill_choice[c]
+            if choice == "shift":
                 self.slots[c - 1] = None
-                below.state = "moving"
+                mover.state = "moving"
+                self._send(mover, [self._court_spot(c, i) for i in range(len(mover.members))])
             else:
                 self.queue.pop(0)
-                below.state = "walking_on"
-                self._start_game(below, t)
+                mover.state = "walking_on"
+                self._start_game(mover, t)
                 self._compact_queue()
-            self.slots[c] = below
-            below.court = c
-            self._send(below, [self._court_spot(c, i) for i in range(len(below.members))])
+                # Walk from the line along the lane to whichever court freed up.
+                lane = lane_y(c, self.n)
+                for i, m in enumerate(mover.members):
+                    spot = self._court_spot(c, i)
+                    m.go((CORRIDOR_X, lane), (spot[0], lane), spot)
+                    m.home = spot
+                    m.busy_until, m.return_to = 0.0, None
+            self.slots[c] = mover
+            mover.court = c
 
         for g in self.groups:
             if g.state in ("moving", "walking_on") and self._arrived(g):

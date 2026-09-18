@@ -132,7 +132,7 @@ def cmd_simulate(args) -> int:
     if args.site:
         cfg = cfg.model_copy(update={"site_id": args.site})
     params = SimParams(courts=args.courts, duration_seconds=args.minutes * 60, seed=args.seed,
-                       fps=args.fps)
+                       fps=args.fps, shift_up_prob=args.shift_up)
     if args.report:
         print(evaluate_sim(params, cfg).summary())
         return 0
@@ -296,6 +296,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("simulate", help="run the engine on the synthetic court")
     sp.add_argument("-c", "--config")
     sp.add_argument("--courts", type=int, default=4)
+    sp.add_argument("--shift-up", type=float, default=0.8,
+                    help="how often a freed court is taken by the group below moving up "
+                         "(1 = always cascade, 0 = always straight off the line)")
     sp.add_argument("--lane-outside", action="store_true",
                     help="zones exclude the walking lane (the recommended calibration)")
     sp.add_argument("--minutes", type=float, default=120)

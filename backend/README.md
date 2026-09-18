@@ -1,7 +1,8 @@
 # OpenCourt backend (Supabase)
 
 Postgres + auto REST + Realtime. The whole backend is one migration:
-[`supabase/migrations/20260916000000_init.sql`](supabase/migrations/20260916000000_init.sql).
+[`../supabase/migrations/20260916000000_init.sql`](../supabase/migrations/20260916000000_init.sql).
+The `supabase/` folder lives at the repo root so the Supabase GitHub integration finds it.
 
 | Object | Purpose |
 |---|---|
@@ -28,7 +29,9 @@ Postgres + auto REST + Realtime. The whole backend is one migration:
 
 1. Create a project at supabase.com. Save the project ref, the anon key, and the database
    password.
-2. Apply the schema, using either option:
+2. Apply the schema, using one of:
+   - **GitHub integration** (already connected): migrations in `supabase/migrations/` are
+     applied when they land on `main`. Check Database → Migrations in the dashboard.
    - SQL editor: paste the migration, then `seed.sql` if you want demo sites.
    - CLI: `npx supabase login`, then `npx supabase link --project-ref <ref>`, then
      `npx supabase db push`.

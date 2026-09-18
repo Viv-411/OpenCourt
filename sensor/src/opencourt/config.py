@@ -98,6 +98,9 @@ class RotationConfig(_Model):
     turnover_window_seconds: float = Field(120.0, gt=0)
     turnover_check_seconds: float = Field(1.0, gt=0)
     queue_lookback_seconds: float = Field(20.0, ge=0)
+    # A track that left the line still counts as coming from the line for this long (people
+    # cross the walkway on their way to a court).
+    queue_transit_seconds: float = Field(60.0, ge=0)
     # After a court empties, wait for crossings to arrive before deciding moved-up vs left
     # (exits are reported up to tracking.excursion_seconds late).
     decide_delay_seconds: float = Field(10.0, ge=0)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from .activity import CrossingLedger, FastOccupancy
@@ -100,7 +100,9 @@ class Engine:
         self.fast = FastOccupancy(self.courts, rot.fast_window_seconds, rot.empty_below_people,
                                   cfg.court.occupied_min_people, rot.fill_confirm_seconds,
                                   rot.expected_fill_confirm_seconds)
-        self.ledger = CrossingLedger(keep=max(rot.shift_window_seconds, rot.restore_seconds) + 60)
+        self.ledger = CrossingLedger(
+            keep=max(rot.shift_window_seconds, rot.restore_seconds) + 60,
+            transit_seconds=rot.queue_transit_seconds)
         self.line = CourtLine(len(self.courts), rot)
         self.event_log: list[LineEvent] = []
 
@@ -185,8 +187,7 @@ class Engine:
     def _evidence(self, court: int, since: float) -> FillEvidence:
         ev = self.ledger.into(court, since)
         before = self.queue_sm.value_at(since - self.cfg.rotation.queue_lookback_seconds)
-        return FillEvidence(ev.from_below, ev.from_outside, ev.from_queue,
-                            queue_drop=before - self.queue_sm.value)
+        return replace(ev, queue_drop=before - self.queue_sm.value)
 
     def _snapshot(self, t: float, events: tuple[LineEvent, ...]) -> Snapshot:
         health = self._health(t)
