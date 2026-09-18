@@ -17,6 +17,7 @@ person. It counts people and notices when a group changes.
 
 - **Start here:** [`docs/GUIDE.md`](docs/GUIDE.md) covers what's built, how to test it,
   and what's left.
+- Recording footage: [`docs/FOOTAGE.md`](docs/FOOTAGE.md)
 - Plan: [`docs/PLAN.md`](docs/PLAN.md)
 - Review of the first draft: [`docs/PLAN_REVIEW.md`](docs/PLAN_REVIEW.md)
 

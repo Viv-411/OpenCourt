@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "site_id": "demo-site",
+  "site_id": "sim-site",
   "generated_at": 1790000000.0,
   "health": "ok",
   "queue": {
