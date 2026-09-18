@@ -1,9 +1,15 @@
 """The ordered line of groups on the courts (docs/PLAN.md §2, §6).
 
-Shift-up rotation: when the group on court k leaves, every group below moves up one court
-and the next group in line takes court 1. Groups never overtake each other, so a group's
-clock — and its light — can follow it from court to court *by position*, without
-recognising anyone.
+Courts differ in how the next group gets on:
+
+* **direct replacement** — a group leaves and the next group in line walks straight onto
+  that court (common at small banks);
+* **shift-up** — the groups below move up one court, mid-game, and the line fills the
+  bottom court.
+
+Both are supported, with no configuration: who is on a court is worked out from what was
+actually seen. A group that moves up keeps its clock — and its light — because the system
+follows *which court it walked to*, never who they are.
 
 The line is driven online by two per-court events from lightly smoothed counts:
 
@@ -65,7 +71,14 @@ class FillEvidence:
     from_below: int = 0  # from court c-1
     from_outside: int = 0  # from the lane / walkway / anywhere that is not a court or queue
     from_queue: int = 0
+    left_line: int = 0  # people who stepped out of the line recently (no identity involved)
     queue_drop: float = 0.0  # smoothed queue length back then minus now
+
+    def off_the_line(self, need: int) -> bool:
+        """Did a group's worth of people come off the line onto this court? Either the same
+        tracks were seen waiting, or that many left the line while that many arrived."""
+        return (self.from_queue >= need or self.queue_drop >= need
+                or (self.from_outside >= need and self.left_line >= need))
 
 
 EvidenceFn = Callable[[int, float], FillEvidence]
@@ -82,6 +95,11 @@ class Flows:
     in_above: int = 0  # from court c+1 (someone walking down the lane through this court)
     in_queue: int = 0
     in_other: int = 0  # from the lane/walkway, or from a court that isn't a neighbour
+    left_line: int = 0  # people who stepped out of the line recently
+
+    @property
+    def came_off_the_line(self) -> int:
+        return max(self.in_queue, min(self.in_other, self.left_line))
 
     @property
     def left(self) -> int:
@@ -230,20 +248,29 @@ class CourtLine:
         need = self.cfg.evidence_min_people
         ev = evidence(c, v.since)
 
-        if c == 1 and (ev.from_queue >= need or ev.queue_drop >= need):
-            self.slots[1] = Group(t)
-            return [LineEvent(LineEventKind.ARRIVAL, t, 1)]
+        # A new group off the line can take ANY court, not just the bottom one: at small
+        # banks people usually walk straight onto whichever court just freed up.
+        if ev.off_the_line(need):
+            self.slots[c] = Group(t)
+            return events + [LineEvent(LineEventKind.ARRIVAL, t, c)]
 
-        if c > 1 and ev.from_below >= need and self.slots.get(c - 1) is not None:
-            return self._silent_shift(c, t, v.since, evidence)
+        # A group from below moving up, on a court that never looked empty. Only when nobody
+        # has just come off the line: people walking from the line to a far court cross the
+        # lower courts, and that must never hand them an older group's clock.
+        if (c > 1 and ev.from_below >= need and ev.left_line < need
+                and self.slots.get(c - 1) is not None):
+            return events + self._silent_shift(c, t, v.since, evidence)
 
+        # The same group back from a break. Never restore an old clock while the line is
+        # shrinking — that is a new group taking the court.
         if (v.removed is not None and ev.from_outside >= need and ev.from_below < need
-                and t - v.since <= self.cfg.restore_seconds):
+                and ev.queue_drop < need and t - v.since <= self.cfg.restore_seconds):
             self.slots[c] = v.removed
-            return [LineEvent(LineEventKind.RESTORE, t, c, ref=v.departure_id)]
+            return events + [LineEvent(LineEventKind.RESTORE, t, c, ref=v.departure_id)]
 
         self.slots[c] = Group(t, assumed=True)
-        return [LineEvent(LineEventKind.ARRIVAL, t, c, assumed=True, note="unclear who arrived")]
+        return events + [LineEvent(LineEventKind.ARRIVAL, t, c, assumed=True,
+                                   note="unclear who arrived")]
 
     def _silent_shift(self, c: int, t: float, since: float,
                       evidence: EvidenceFn) -> list[LineEvent]:
@@ -262,7 +289,7 @@ class CourtLine:
         # Court i's group moved up and someone we can't place took its spot: a new group from
         # the queue if it's court 1 and the line shrank, otherwise unknown (fresh clock).
         ev = evidence(i, since)
-        from_queue = i == 1 and (ev.from_queue >= need or ev.queue_drop >= need)
+        from_queue = ev.off_the_line(need)
         self.slots[i] = Group(t, assumed=not from_queue, provisional=True)
         events.append(LineEvent(LineEventKind.ARRIVAL, t, i, assumed=not from_queue,
                                 note="took the court the moving group left"))
@@ -277,9 +304,14 @@ class CourtLine:
         for c in range(self.court_count, 0, -1):
             if c in self.vacancies:
                 continue
-            since = max(t - self.cfg.turnover_window_seconds, self._last_change.get(c, -1e18))
-            f = flows(c, since)
-            came = f.in_queue if c == 1 else f.in_below
+            # A court that emptied or filled recently was already explained by that path.
+            if t - self._last_change.get(c, -1e18) < self.cfg.turnover_window_seconds:
+                continue
+            f = flows(c, t - self.cfg.turnover_window_seconds)
+            # People walking through from the court above make the counts untrustworthy.
+            if f.in_above > 0:
+                continue
+            came = max(f.came_off_the_line, f.in_below if c > 1 else 0)
             if came < need:
                 continue
             below = self.slots.get(c - 1) if c > 1 else None
@@ -292,15 +324,17 @@ class CourtLine:
                                         note="quick swap"))
             else:
                 continue
-            if c > 1 and below is not None and (c - 1) not in self.vacancies:
+            if c > 1 and below is not None and f.in_below >= need and (
+                    c - 1) not in self.vacancies:
                 self.slots[c] = below
                 self.slots[c - 1] = Group(t, assumed=True, provisional=True)
                 gave_up.add(c - 1)
                 events.append(LineEvent(LineEventKind.MOVE, t, c, from_court=c - 1,
                                         note="quick swap"))
             else:
-                self.slots[c] = Group(t, assumed=c != 1)
-                events.append(LineEvent(LineEventKind.ARRIVAL, t, c, assumed=c != 1))
+                from_line = f.came_off_the_line >= need
+                self.slots[c] = Group(t, assumed=not from_line)
+                events.append(LineEvent(LineEventKind.ARRIVAL, t, c, assumed=not from_line))
             self._last_change[c] = t
         return events
 

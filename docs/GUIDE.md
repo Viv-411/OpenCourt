@@ -1,6 +1,27 @@
 # OpenCourt: what's built, how to test it, what's left
 
-*Last updated 2026-09-16.* For design decisions, see [`PLAN.md`](PLAN.md).
+*Last updated 2026-09-17.* For design decisions, see [`PLAN.md`](PLAN.md).
+
+---
+
+## What the tests actually ran on (no real videos yet)
+
+**No footage of real courts has been used.** Nothing has been filmed. What exists is:
+
+1. **A simulated court** (`sensor/src/opencourt/sim.py`). It doesn't produce video at all.
+   It produces what the camera software *would* produce: a list of "there's a person at
+   this spot, with this temporary tracker number" for each frame, plus the ground truth
+   (which group is really on which court). It models 2, 4, 8 or more courts, groups that
+   leave and are replaced directly, groups that shift up, parties of 1–4 merging into
+   foursomes, water breaks, ball chases, bystanders, and the messiness of real tracking
+   (missed people, ID numbers changing, ghost detections). All the accuracy numbers in these
+   docs come from this.
+2. **One 20-second synthetic clip** made by slowly panning a stock photo of people at a bus
+   stop (the sample image that ships with the YOLO library). It was used once to confirm
+   the detector and tracker run end to end and give stable IDs. That's all.
+
+So the simulator proves the *logic*; the first real test of the *vision* is your first
+recording at Rick Drazner Park.
 
 ---
 
@@ -22,6 +43,25 @@ can be tested with a **simulated court** long before any footage or hardware exi
 
 ---
 
+## 0. Where everything is, and how to get at it
+
+| What | Where | How to see it working |
+|---|---|---|
+| Decision logic ("the engine") | `sensor/src/opencourt/` — `line.py` is the heart | `cd sensor && uv run opencourt simulate --speed 20` |
+| Simulator + scoring | `sensor/src/opencourt/sim.py`, `evaluate.py` | `uv run opencourt simulate --report --courts 2 --shift-up 0` |
+| Camera / detector / lights / Pi service | `sensor/src/opencourt/{capture,detect,lights,runner}.py`, `sensor/systemd/` | Needs the Pi, or a video file: `uv run opencourt replay clip.mp4 --show` |
+| Zone calibration tool | `sensor/src/opencourt/calibrate.py` | `uv run opencourt calibrate --source clip.mp4 --courts 2` |
+| Database schema + security | `supabase/migrations/…_init.sql` | `cd backend && uv run pytest` |
+| iPhone app | `ios/OpenCourt.xcodeproj` (views in `ios/OpenCourt/Views/`) | Open in Xcode, press Run (demo data) |
+| Shared app logic (models, formatting, live data) | `ios/OpenCourtKit/` | `cd ios/OpenCourtKit && swift test` |
+| Design + decisions | `docs/PLAN.md` | — |
+| Tests, all at once | `scripts/test-all.sh` | — |
+
+Everything under `sensor/` is Python, run through `uv` (`source scripts/env.sh` first).
+Everything under `ios/` is Swift. `supabase/` is SQL.
+
+---
+
 ## 1. Sensor (`sensor/`): the brain
 
 ### How it thinks, step by step
@@ -34,13 +74,13 @@ can be tested with a **simulated court** long before any footage or hardware exi
 3. **Counts.** People per court and in line, smoothed so one bad frame changes nothing.
 4. **Crossings.** "Someone went from Court 2 to Court 3." Short trips off the court,
    like chasing a ball, are ignored.
-5. **The line of groups** (`line.py`). The groups on the courts are an ordered list:
-   - When a court **empties** and people were seen stepping onto the open court above,
-     the group **moved up**, taking its clock (and light) with it.
-   - Otherwise the group **left**.
-   - When a court **fills**, the newcomers are one of: the group moving in, a new group
-     from the line, the same group back from a break, or, if unsure, a new group with a
-     fresh clock.
+5. **Who is on each court** (`line.py`). It doesn't assume how the park rotates:
+   - When a court **empties**: if people were seen stepping onto the open court above,
+     the group **moved up**, taking its clock (and light) with it. Otherwise it **left**.
+   - When a court **fills**: if a group's worth of people came **off the line** (whichever
+     court they walked to), it's a **new group** with a fresh clock. Only with clear
+     evidence is it the group from below moving up, or the same group back from a break.
+   - When unsure, it's a **fresh clock**. Being unsure can delay a light, never cause one.
    - A **quick swap**, where a court never looks empty, is caught from crossings alone.
 6. **Clock and light.** Each group's clock only runs while someone is waiting in line.
    - At 18 minutes the light pulses ("Almost time").
@@ -81,6 +121,8 @@ Useful options:
 
 - `--speed 20` plays it at 20× real time and shows the light changes.
 - `--courts 2` or `--courts 8` changes the size of the bank.
+- `--shift-up 0` means groups never shift up (a new group takes the freed court, like a
+  2-court park); `--shift-up 1` means they always do; the default is a mix.
 - `--lane-outside` draws the zones without the walking lane. Leave it out for the harder
   case where the lane is part of each court's zone.
 
@@ -106,8 +148,8 @@ How to read it:
 - **should light / lit**: overstaying groups that crossed 20 minutes while people waited,
   and how many of them actually got the light.
 
-**Run the unit and regression tests** (103 tests, about 2 minutes; add `-m "not slow"` for
-about 15 seconds):
+**Run the unit and regression tests** (about 130 tests; the full run simulates dozens of
+2-hour sessions and takes ~7 minutes, so add `-m "not slow"` for the 15-second version):
 
 ```bash
 uv run pytest
@@ -198,16 +240,19 @@ scripts/test-all.sh --fast   # skip the 2-hour simulations
 
 - [ ] **Email Buffalo Grove Park District.** Ask for permission to film for development,
       and to run a supervised pilot. Include the privacy notes from PLAN §3.
-- [ ] **Record 30 minutes at the 2-court park** to check camera height, reach, and zone
-      drawing. Then **1–2 hours at the 4-court park** while people are waiting.
+- [ ] **Record 30–60 minutes at Rick Drazner Park** (2 courts) to check camera height,
+      reach, and zone drawing. Then **1–2 hours at Mike Rylko** (8 courts) while people
+      are waiting; try two camera positions.
 - [ ] **Label** departures and game start/end times (`sensor/labels/README.md`).
 - [ ] Decide the **light layout** (one per court, or a panel at the line) after seeing
       the site.
 
 ### Needs a quick setup from you
 
-- [ ] **Create a Supabase project** (free tier). Then I can apply the schema, register a
-      simulator "device," and connect the app, so the simulator drives your phone live.
+- [ ] **Supabase:** the project exists and is linked to GitHub. Still needed from you: the
+      project URL (`https://<ref>.supabase.co`) and the anon key, so the app and the
+      simulator can point at it. Put them in `ios/Config/Secrets.xcconfig` and
+      `sensor/config/local.yaml`, or paste them to me.
 - [ ] **Buy the hardware** (PLAN §8): a Pi 5, Camera Module 3 Wide, a mount, 12 V amber
       lights, and MOSFETs.
 - [ ] Optional: join the **Apple Developer Program** if you want TestFlight. A free account
@@ -228,8 +273,10 @@ scripts/test-all.sh --fast   # skip the 2-hour simulations
 ### Known limits today
 
 - Everything is proven only against the **simulator**. Real footage will surprise us.
-- **8 courts in one camera view** is the weak case. In busy simulated sessions, groups
-  hopping through several open courts caused up to about 5 minutes of wrong amber per
-  2 hours. Two and four courts had none.
+- **8 courts in one camera view with a strict cascade** is the weak case: up to about 3
+  minutes of wrong amber per 2 hours, and some overstayers missed. Direct replacement at
+  8 courts, and everything at 2 and 4 courts, had none.
+- **Zone drawing matters.** If the walking lane has to be inside the court zones, the
+  engine plays it safe (fresh clocks), which delays some lights.
 - The 20-minute rule will occasionally light a group that is simply having a long first
   game. Game-end detection is how that eventually goes away.

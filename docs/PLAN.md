@@ -225,13 +225,14 @@ track that settled in zone A and then settled in zone B.
   This is positional only.
 
 The line model (`sensor/src/opencourt/line.py`) is driven by events, and each court is
-handled on its own, so it works for any number of courts:
+handled on its own, so it works for any number of courts and for both turnover customs
+(§2):
 
 | Event | Meaning |
 |---|---|
 | **Court c goes empty** | Light smoothing means the count was near zero for a few seconds. The engine waits `decide_delay_seconds` for crossings to arrive, then decides. If people were seen stepping onto the **open court above**, the group **moved up**, and its clock goes with it. Otherwise the group **left**, and a quick return can still undo that. |
-| **Court c fills** (people stay ≥ `fill_confirm_seconds`) | The newcomers are one of these, in order: the group already known to be moving in; a **new group from the line** (Court 1); the group from the court below, if people were seen crossing up ("silent" move-up, which cascades down the line); **the same group back from a break**, if they were seen coming back from outside; otherwise **a new group with a fresh clock**. |
-| **Quick swap** (a court never looked empty) | ≥ `turnover_min_people` left toward the entrance (not counting people walking through) **and** as many arrived from the court below (or from the line, for Court 1). That means a departure plus a move-up. |
+| **Court c fills** (people stay ≥ `fill_confirm_seconds`) | The newcomers are one of these, in order: the group already known to be moving in; a **new group off the line** (any court: the same people were seen waiting, or as many left the line as arrived); the group from the court below, if people were seen crossing up and nobody just came off the line; **the same group back from a break**, if they were seen coming back from outside and the line didn't shrink; otherwise **a new group with a fresh clock**. |
+| **Quick swap** (a court never looked empty) | ≥ `turnover_min_people` left toward the entrance **and** as many arrived off the line or from the court below, on a court that hasn't otherwise changed recently. |
 | **Several open courts** | A group can move up twice before settling. Groups still walking are pushed up the chain of open courts. |
 
 **Every fallback gives a younger clock.** If the engine isn't sure who is on a court, it
@@ -240,7 +241,8 @@ on early. A group already on court when the system starts gets the full time.
 
 ### Calibration guidance
 
-- Number courts from the entrance and line (Court 1), following the order groups move up.
+- Number courts from the entrance and line (Court 1) outward. If groups do shift up at this
+  park, that is also the order they move in.
 - Each court zone covers the playing area plus the run-off behind the baselines.
 - **Leave the walking lane between the court lines and the fence out of the court zones**
   if the camera can separate it. Otherwise, the fill confirmation and the pass-through
@@ -346,22 +348,23 @@ The core logic (zones, smoothing, crossings, activity, line model, signals, esti
 7. `simulate --publish`: the simulator drives the real backend, which feeds the real app.
    ⏳ Needs a Supabase project.
 
-**What the simulator showed** (second design: the event-driven line model; busy 2-hour
-sessions; noisy tracks with missed detections, ID switches, ghosts, bystanders, breaks, and
-ball chases; departing groups walking the lane; parties merging into groups; 3 seeds each):
+**What the simulator showed** (busy 2-hour sessions with noisy tracks: missed detections,
+ID switches, ghosts, bystanders, breaks, ball chases, departing groups walking the lane,
+parties merging into groups; 2–3 seeds per cell). "Direct" = a new group takes the freed
+court; "shift" = groups below move up; "mixed" = half and half.
 
-| Courts | Walking lane | Departures found | False departures | False "time up" | Overstaying groups lit |
-|---|---|---|---|---|---|
-| 2 | outside zones / inside zones | 100% / 100% | 0% / 0% | **0 min** | all |
-| 4 | outside / inside | 94–100% / 94–100% | 0–11% / 0–5% | **0 min** | all but one |
-| 8 | outside / inside | 92–98% / 92–98% | 9–13% | 0–5 min per 2 h | all |
+| Courts | Zones exclude the lane (recommended) | Zones include the lane |
+|---|---|---|
+| 2 | direct / mixed / shift: **0 min** false amber, 83–100% of departures found | 0 min false amber; some overstayers missed |
+| 4 | direct / mixed: **0 min**, 96–100% found; shift: ≤ 1 min, ~95% found | ≤ 1 min false amber |
+| 8 | direct: **0 min**, 94–100% found; mixed: ≤ 5 min; shift: ~3 min and some misses | ≤ 3 min false amber, more misses |
 
 Almost every "first-game group lit" case comes from the 20-minute rule itself: some
 simulated first games run past 20 minutes. They are not detection errors.
 
-The 8-court weakness: when several courts are open at once, groups hop up two courts
-in a row, and the engine sometimes loses track of which group is which. This happens
-mostly when the line is short, and possibly less often in real life than in the simulator.
+Weak spots: a strict cascade on 8 courts (groups hopping through several open courts), and
+any layout where the walking lane has to be inside the court zones (walkers look like
+arrivals, so the engine plays it safe and hands out fresh clocks, which can delay lights).
 
 Design lessons so far:
 
@@ -443,25 +446,27 @@ Answered on 2026-09-16:
 - ✅ A group that moves up keeps playing the same game, so its clock and light move with it.
 - ✅ Prototype rule: 20 minutes per group while others wait. The light reads "Time up."
   Game-end detection is future work (§12).
-- ✅ It must work for any number of courts. **Start testing at a 4-court park** (see below).
+- ✅ It must work for any number of courts and any turnover custom: direct replacement or
+  shift-up, with no configuration (2026-09-17).
 - ✅ Departing groups walk back toward the entrance inside the fence, along the lane.
 - ✅ Parties of 1–4 join the line and team up into foursomes. Singles are rare.
 - ✅ Buffalo Grove, IL, so BIPA applies. The design stays clear of biometrics (§3).
 
-**Which park to test at first: 4 courts.** It is the smallest bank where move-ups chain
-across several courts, which is the hard part. It can still be covered by one wide
-camera from one elevated spot. In the simulator, 2 and 4 courts had no false amber at all.
+**The parks (chosen 2026-09-17):**
 
-- The **2-court park** is a good place for a first half-hour of footage: checking camera
-  height, detection range, and zone drawing, with little at stake.
-- The **8-court park** comes later. It probably needs two camera positions, and it is the
-  known weaker case in simulation.
+| Park | Courts | Notes |
+|---|---|---|
+| **Rick Drazner Park**, 401 Aptakisic Rd | 2 outdoor courts (park district page) | Start here: one camera covers everything, and 2 courts scored perfectly in simulation. |
+| **Mike Rylko Community Park**, 1000 N Buffalo Grove Rd | 8 lighted outdoor courts | The real target. Probably needs two camera positions, or a very high one. Layout unknown until the site visit; it is not mapped on OpenStreetMap. |
+
+Buffalo Grove Park District: 847-850-2100, info@bgparks.org (Alcott Center, 530 Bernard
+Drive).
 
 Still open:
 
 - [ ] Light layout: one light per court, or a panel at the line? Decide after the site
       visit.
-- [ ] For each park: which court is "Court 1" (next to the entrance and line), and how
-      the courts are laid out (one row, or two). This matters for zone drawing.
+- [ ] For each park: where the line forms, which court is nearest it ("Court 1"), and the
+      layout (one row, or two). This matters for zone drawing, not for the logic.
 - [ ] Is there a divider fence or gate between neighbouring courts? It changes the paths
       groups take when they move up.

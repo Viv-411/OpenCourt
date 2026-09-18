@@ -26,10 +26,12 @@ competition deadline.
    (`ROTATING`), and whenever `line.py` can't tell who arrived (a fresh clock, never a
    restored or moved one without evidence). Changes that make lights *harsher* under
    uncertainty need a strong reason.
-4. **The clock (and light) belongs to the group, not the court.** The court uses a shift-up
-   rotation: when the group on court k leaves, courts 1…k−1 each move up one court,
-   mid-game, and the line fills court 1. Groups never change order, so clocks move by
-   position (`line.py`). Never reset a clock just because a court's occupants changed.
+4. **The clock (and light) belongs to the group, not the court, and nothing may assume a
+   turnover custom.** Some parks shift up (groups below move up a court mid-game, the line
+   fills court 1); at others the next group takes the freed court directly. `line.py`
+   works both out from evidence. A new group off the line can land on *any* court. Never
+   reset a clock just because a court's occupants changed, and never hand an old clock to
+   people who might be new.
 5. **Tracker IDs are short-lived.** Use them only for boundary crossings over seconds.
    Nothing may depend on an ID lasting.
 6. **Any number of courts.** Nothing may assume a fixed count. Courts are numbered from
@@ -39,8 +41,10 @@ competition deadline.
 
 - `sensor/`: Python 3.12 package `opencourt` (uv). The pure core has no OpenCV or torch
   imports. The vision and Pi extras are optional. See `sensor/README.md` for the module map.
-- `backend/`: one Supabase migration plus pytest SQL tests on embedded Postgres
-  (pgserver). The only write path is `ingest_status(p_token, p_payload)`.
+- `supabase/`: the Supabase project files (migrations, seed, config) at the repo root, where
+  the Supabase GitHub integration expects them. `backend/` holds the README and the pytest
+  SQL tests (embedded Postgres via pgserver). The only write path is
+  `ingest_status(p_token, p_payload)`. New schema changes go in a **new** migration file.
 - `docs/GUIDE.md`: plain-language tour of what's built, how to test it, and what's left.
 - `ios/`: `OpenCourt.xcodeproj` (the `OpenCourt/` folder is synced automatically, so new
   files need no project edits) plus the `OpenCourtKit` Swift package with two libraries,
@@ -110,7 +114,9 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
 
 - The amber state reads **"Time up"**. The prototype gives each group 20 minutes while
   others wait. Game-end or score detection is future work (PLAN §12).
-- The same group keeps its game when it moves up, so the light follows it.
+- The same group keeps its game when it moves up, so the light follows it. But the system
+  must not depend on shifting up: at many parks the next group simply takes the freed court.
+- Parks: Rick Drazner (2 courts) first, then Mike Rylko (8 lighted courts).
 - Departing groups walk back to the entrance inside the fence, along the court lanes.
 - People join the line in parties of 1–4 and team up into foursomes.
 - Buffalo Grove, IL (BIPA). Test parks with 2, 4, 8, and more courts are available; the

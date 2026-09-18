@@ -9,7 +9,7 @@ from pathlib import Path
 import psycopg
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1] / "supabase"
+ROOT = Path(__file__).resolve().parents[2] / "supabase"
 
 SUPABASE_STUBS = """
 do $$ begin
