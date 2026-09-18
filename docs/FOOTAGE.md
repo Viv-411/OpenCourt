@@ -87,3 +87,32 @@ Approximate is fine (within 10–15 seconds). The format I'll use is in
 - **Mike Rylko (8 courts as 4 + 4)** later. Half the bank (one row of 4) from one high
   spot is exactly the right demo target; the system treats that as a 4-court site. Both
   rows would need two cameras, which is a later problem.
+
+## Staging a session with friends (optional, 30 minutes)
+
+Natural footage of strangers at a busy time needs no help. But a staged session lets us
+act out exactly the situations that matter. Headcount:
+
+| People | What you can stage |
+|---|---|
+| 3–4 | Singles: 2 play, 2 wait in line, then swap. A complete rotation with a line. |
+| 6 | Doubles with 2 waiting. |
+| 8 | Two full groups: one plays, one waits, then they swap. Ideal. |
+
+Keep the camera rolling, and say what you're doing out loud so the audio marks each scene.
+Two or three repeats of each is plenty.
+
+1. **Plain rotation.** A plays, B waits at the line; A walks off toward the entrance; B walks
+   on. Twice.
+2. **Water break.** Two players step off to the fence for 30–60 s and come back. Must not
+   count as leaving.
+3. **Ball chase.** Someone runs a few metres outside the court and back.
+4. **Walk-through.** A "leaving" group walks along the lane past the other court (two courts
+   in view).
+5. **Player swap.** One person on court swaps with one from the line; play continues.
+6. **Move-up** (two courts). The far court's group leaves, the near group moves to it, the
+   line takes the near court.
+7. **Bystander.** Someone stands by the fence chatting, neither playing nor waiting.
+8. **Overstay.** The playing group keeps going while people wait. For replaying this clip,
+   the timer is set to 3 minutes instead of 20 (`timer.threshold_seconds: 180` in a test
+   config) so "time up" actually triggers.
