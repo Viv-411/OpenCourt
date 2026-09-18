@@ -25,6 +25,18 @@ The `supabase/` folder lives at the repo root so the Supabase GitHub integration
 - `court_status` skips writes that change nothing, so Realtime only fires on real changes.
   Clock values are refreshed at least every 30 s, and clients count up locally in between.
 
+## This project
+
+- URL: `https://inkvqajxepcaqjubhfye.supabase.co` (region us-west-2; the session pooler host is
+  `aws-0-us-west-2.pooler.supabase.com:5432`).
+- Schema and seed were applied on 2026-09-17 with psycopg over the pooler. Later schema changes
+  go in a **new** file under `supabase/migrations/` and are applied the same way, or pasted into
+  the SQL editor (`supabase/apply.sql` is the one-shot bundle for a fresh project).
+- The publishable key lives in `ios/Config/Secrets.xcconfig` and `sensor/.env` (both git-ignored);
+  the simulator's device token is in `sensor/.env`. The database password is not stored in the
+  repo; ask the owner.
+- Sites seeded: `demo-site`, `sim-site` (4 courts each), `rick-drazner` (2), `mike-rylko` (8).
+
 ## Set up a project
 
 1. Create a project at supabase.com. Save the project ref, the anon key, and the database

@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import math
+import os
 import sys
 import time
 from pathlib import Path
@@ -336,10 +337,25 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _load_dotenv(path: Path) -> None:
+    """Load KEY=VALUE lines from sensor/.env (git-ignored) without overriding the environment."""
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
 def main(argv: list[str] | None = None) -> int:
+    _load_dotenv(SENSOR_ROOT / ".env")
     args = build_parser().parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    if not args.verbose:
+        logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per publish is noise
     return args.func(args)
 
 
