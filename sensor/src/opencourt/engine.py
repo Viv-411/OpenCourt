@@ -141,6 +141,8 @@ class Engine:
         queue_raw = 0
         zoned: list[tuple[int, str, tuple[float, float]]] = []
         for tr in obs.tracks:
+            if self.zone_map.ignored(tr):
+                continue
             foot = tr.foot
             zone = self.zone_map.classify(foot)
             if zone == Zone.QUEUE:

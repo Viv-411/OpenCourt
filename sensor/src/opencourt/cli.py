@@ -219,7 +219,7 @@ def cmd_calibrate(args) -> int:
     from .calibrate import calibrate
 
     out = Path(args.out)
-    existing = load_zones(out) if out.exists() else None
+    existing = load_zones(out) if (args.edit and out.exists()) else None
     ok = calibrate(args.source, args.courts, out, existing)
     return 0 if ok else 1
 
@@ -372,10 +372,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--report", action="store_true", help="score against ground truth")
     sp.set_defaults(func=cmd_simulate)
 
-    sp = sub.add_parser("calibrate", help="click zone polygons on a frame")
-    sp.add_argument("--source", required=True, help="video path | usb:N | picamera")
+    sp = sub.add_parser("calibrate", help="draw the courts, the waiting line and ignore areas")
+    sp.add_argument("--source", required=True,
+                    help="recording (an empty-court still is made from it) | image | "
+                         "usb:N | picamera")
     sp.add_argument("--courts", type=int, required=True)
     sp.add_argument("--out", default=str(SENSOR_ROOT / "config" / "zones.yaml"))
+    sp.add_argument("--edit", action="store_true",
+                    help="start from the zones already in --out instead of a blank slate")
     sp.set_defaults(func=cmd_calibrate)
 
     sp = sub.add_parser("evaluate", help="score replay events against hand labels")

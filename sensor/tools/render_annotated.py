@@ -11,6 +11,9 @@ of line events. Writes into the git-ignored data/ directory only. Dev-only (see 
 """
 
 import argparse
+import os
+import shutil
+import sys
 from pathlib import Path
 
 import cv2
@@ -53,15 +56,21 @@ def main() -> None:
     header, frames = read(args.tracks)
     out_path = Path(args.out or str(Path(args.video).with_suffix("")) + ".annotated.mp4")
 
+    # ~10 MB per minute of clip at 1280 wide; refuse to start rather than fail halfway.
+    free = shutil.disk_usage(out_path.parent).free
+    if free < 500 * 1024 * 1024:
+        sys.exit(f"only {free / 1e6:.0f} MB free on this disk; free up at least 500 MB first")
+    partial = out_path.with_name(out_path.stem + ".partial.mp4")
+
     cap = cv2.VideoCapture(args.video)
     src_fps = cap.get(cv2.CAP_PROP_FPS)
     W, H = header.size
     scale = args.width / W
     size = (args.width, int(H * scale))
-    writer = cv2.VideoWriter(str(out_path), cv2.VideoWriter_fourcc(*"avc1"),
+    writer = cv2.VideoWriter(str(partial), cv2.VideoWriter_fourcc(*"avc1"),
                              src_fps / header.step, size)
     if not writer.isOpened():
-        writer = cv2.VideoWriter(str(out_path), cv2.VideoWriter_fourcc(*"mp4v"),
+        writer = cv2.VideoWriter(str(partial), cv2.VideoWriter_fourcc(*"mp4v"),
                                  src_fps / header.step, size)
 
     ticker: list[tuple[float, str]] = []
@@ -91,9 +100,15 @@ def main() -> None:
             pts = np.array(poly, np.int32)
             cv2.polylines(frame, [pts], True, c, 3)
         cv2.polylines(frame, [np.array(zones.queue, np.int32)], True, ZONE_COLORS["queue"], 3)
+        for poly in zones.ignore:
+            cv2.polylines(frame, [np.array(poly, np.int32)], True, (150, 150, 150), 2)
 
         # people
         for tr in obs.tracks:
+            if zm.ignored(tr):
+                x1, y1, x2, y2 = map(int, tr.bbox)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (150, 150, 150), 1)
+                continue
             zone = zm.classify(tr.foot)
             if zone.startswith("court_"):
                 c = COURT_COLORS[(int(zone[6:]) - 1) % len(COURT_COLORS)]
@@ -131,6 +146,13 @@ def main() -> None:
 
     writer.release()
     cap.release()
+    check = cv2.VideoCapture(str(partial))
+    ok = check.isOpened() and check.get(cv2.CAP_PROP_FRAME_COUNT) > 0
+    check.release()
+    if not ok:
+        partial.unlink(missing_ok=True)
+        sys.exit("rendering failed (is the disk full?); the previous video, if any, is untouched")
+    os.replace(partial, out_path)  # only replace the old video once the new one is complete
     print(out_path)
 
 

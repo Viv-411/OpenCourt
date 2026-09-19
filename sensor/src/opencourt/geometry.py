@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from .config import Zones
-from .types import Point, Zone
+from .types import Point, Track, Zone
 
 
 def point_in_polygon(p: Point, poly: Sequence[Point]) -> bool:
@@ -36,7 +36,16 @@ class ZoneMap:
     def __init__(self, zones: Zones):
         self._courts = sorted(zones.courts.items())
         self._queue = zones.queue
+        self._ignore = zones.ignore
         self.court_numbers = [n for n, _ in self._courts]
+
+    def ignored(self, track: Track) -> bool:
+        """A detection centred on something that isn't a person (drawn as an ignore area)."""
+        if not self._ignore:
+            return False
+        x1, y1, x2, y2 = track.bbox
+        centre = ((x1 + x2) / 2, (y1 + y2) / 2)
+        return any(point_in_polygon(centre, poly) for poly in self._ignore)
 
     def classify(self, p: Point) -> str:
         for n, poly in self._courts:
