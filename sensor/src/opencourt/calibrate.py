@@ -9,7 +9,7 @@ waiting line, then any number of optional "ignore" areas around things the detec
 mistakes for people (a sign post, a pole).
 
 Keys:
-  click        add a corner
+  click        add a corner (clicks near another zone's corner snap onto it)
   z            undo the last corner
   n / Enter    this zone is done, go to the next one
   b            go back to the previous zone to fix it
@@ -105,9 +105,21 @@ def calibrate(spec: str, courts: int, out: Path, existing: Zones | None = None) 
             ignores.append([])
         return ignores[k]
 
+    snap_px = 15 * max(1.0, w / 1920)
+
+    def snapped(x: float, y: float) -> tuple[float, float]:
+        """Clicks near a corner of another zone land exactly on it, so shared edges meet with
+        no gap or overlap (a gap of a few pixels matters when feet sit right at a fence)."""
+        mine = cur_list()
+        others = [p for poly in polys + ignores if poly is not mine for p in poly]
+        best = min(others, key=lambda p: (p[0] - x) ** 2 + (p[1] - y) ** 2, default=None)
+        if best is not None and (best[0] - x) ** 2 + (best[1] - y) ** 2 <= snap_px ** 2:
+            return best
+        return (float(x), float(y))
+
     def on_mouse(event, x, y, *_):
         if event == cv2.EVENT_LBUTTONDOWN:
-            cur_list().append((float(x), float(y)))
+            cur_list().append(snapped(x, y))
 
     def color(i: int) -> tuple[int, int, int]:
         if i < courts:
