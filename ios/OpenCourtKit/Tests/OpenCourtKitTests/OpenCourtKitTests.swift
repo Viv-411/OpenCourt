@@ -153,9 +153,9 @@ let courtJSON = """
                                   clock: { Date(timeIntervalSince1970: 1800) })
         let sites = try await repo.sites()
         #expect(sites.map(\.id) == DemoRepository.siteIDs)
-        let snap = try await repo.snapshot(siteID: "demo-riverside")
-        #expect(snap.courts.count == 4)
-        #expect(snap.courts.map(\.number) == [1, 2, 3, 4])
+        let snap = try await repo.snapshot(siteID: "mike-rylko")
+        #expect(snap.courts.count == 8)
+        #expect(snap.courts.map(\.number) == Array(1...8))
         #expect(snap.freshness(at: Date(timeIntervalSince1970: 1800)) == .live)
         let offline = try await repo.snapshot(siteID: "demo-offline")
         if case .stale = offline.freshness(at: Date(timeIntervalSince1970: 1800)) {} else {
@@ -168,7 +168,7 @@ let courtJSON = """
         for minute in stride(from: 0, to: 60, by: 1) {
             let repo = DemoRepository(start: Date(timeIntervalSince1970: 0),
                                       clock: { Date(timeIntervalSince1970: Double(minute * 60)) })
-            let snap = try await repo.snapshot(siteID: "demo-riverside")
+            let snap = try await repo.snapshot(siteID: "mike-rylko")
             sawDue = sawDue || !snap.courtsInSecondGame.isEmpty
         }
         #expect(sawDue)
@@ -188,11 +188,11 @@ let courtJSON = """
         await store.loadSites()
         #expect(store.sites.count == 3)
         #expect(store.errorMessage == nil)
-        store.follow(siteID: "demo-oak-park")
+        store.follow(siteID: "rick-drazner")
         for _ in 0..<100 where store.snapshot == nil {
             try await Task.sleep(for: .milliseconds(10))
         }
-        #expect(store.snapshot?.site.id == "demo-oak-park")
+        #expect(store.snapshot?.site.id == "rick-drazner")
         #expect(store.snapshot?.openCourts.count == 1)
         store.stop()
     }

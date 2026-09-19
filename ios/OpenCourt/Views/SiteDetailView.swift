@@ -3,7 +3,10 @@ import SwiftUI
 
 struct SiteDetailView: View {
     @Environment(SiteStore.self) private var store
+    @Environment(EventsStore.self) private var events
+    @Environment(FavoritesStore.self) private var favorites
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
     let site: Site
 
     private var snapshot: SiteSnapshot? {
@@ -27,6 +30,9 @@ struct SiteDetailView: View {
                         }
                     }
                     Legend()
+                    BusyTimesCard(site: snapshot.site)
+                    upcoming
+                    parkInfo(snapshot.site)
                 } else if let error = store.errorMessage {
                     ContentUnavailableView("Couldn't load", systemImage: "wifi.exclamationmark",
                                            description: Text(error))
@@ -37,12 +43,63 @@ struct SiteDetailView: View {
             .padding()
         }
         .navigationTitle(site.name)
+        .navigationBarTitleDisplayMode(site.name.count > 20 ? .inline : .large)
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button {
+                    favorites.toggle(site.id)
+                } label: {
+                    Label(favorites.contains(site.id) ? "Unstar" : "Star",
+                          systemImage: favorites.contains(site.id) ? "star.fill" : "star")
+                }
+                .tint(Theme.amber)
+                if let lat = site.latitude, let lon = site.longitude,
+                   let url = directionsURL(latitude: lat, longitude: lon, name: site.name) {
+                    Button("Directions", systemImage: "car.fill") { openURL(url) }
+                }
+            }
+        }
         .refreshable { await store.refresh(siteID: site.id) }
         .onAppear { store.follow(siteID: site.id) }
         .onDisappear { store.stop() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { store.follow(siteID: site.id) } else { store.stop() }
         }
+    }
+}
+
+extension SiteDetailView {
+    @ViewBuilder var upcoming: some View {
+        let here = events.events(at: site.id).prefix(3)
+        if !here.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Coming up here").font(.headline)
+                ForEach(Array(here)) { e in
+                    NavigationLink(value: e) {
+                        EventRow(event: e, going: events.going.contains(e.id))
+                            .padding(10)
+                            .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    func parkInfo(_ s: Site) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("About this park").font(.headline)
+            if let address = s.address, !address.isEmpty, address != "Demo data" {
+                Label(address, systemImage: "mappin.and.ellipse")
+            }
+            Label("\(s.courtCount) outdoor courts", systemImage: "sportscourt")
+            Label("Free to play, first come first served", systemImage: "person.2.wave.2")
+            Label("One game, then rotate when people are waiting", systemImage: "arrow.triangle.2.circlepath")
+        }
+        .font(.subheadline)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 14))
     }
 }
 

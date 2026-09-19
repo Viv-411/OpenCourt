@@ -14,7 +14,9 @@ public actor DemoRepository: StatusRepository {
         self.tick = tick
     }
 
-    public static let siteIDs = ["demo-riverside", "demo-oak-park", "demo-offline"]
+    /// The demo mirrors the real pilot parks (so demo events line up with park pages), plus
+    /// one made-up park whose sensor is offline.
+    public static let siteIDs = ["mike-rylko", "rick-drazner", "demo-offline"]
 
     public func sites() async throws -> [Site] {
         let now = clock()
@@ -50,13 +52,14 @@ public actor DemoRepository: StatusRepository {
     func snapshot(siteID: String, now: Date) throws -> SiteSnapshot {
         let t = now.timeIntervalSince(start)
         switch siteID {
-        case "demo-riverside":
-            return busySite(id: siteID, name: "Riverside Park", courts: 4, t: t, now: now,
-                            lat: 41.881, lon: -87.623)
-        case "demo-oak-park":
-            return quietSite(id: siteID, name: "Oak Street Courts", now: now)
+        case "mike-rylko":
+            return busySite(id: siteID, name: "Mike Rylko Community Park", courts: 8, t: t, now: now,
+                            lat: 42.1683, lon: -87.9681)
+        case "rick-drazner":
+            return quietSite(id: siteID, name: "Rick Drazner Park", now: now)
         case "demo-offline":
-            let site = Site(id: siteID, name: "Lakeview", courtCount: 2,
+            let site = Site(id: siteID, name: "Lakeview Courts", address: "Demo data",
+                            latitude: 42.176, longitude: -87.95, courtCount: 2,
                             health: .ok, queueCount: 2, queueWaiting: true, waitSeconds: 600,
                             nextFreeSeconds: 120, groupsAhead: 1,
                             updatedAt: now.addingTimeInterval(-900))
@@ -101,7 +104,8 @@ public actor DemoRepository: StatusRepository {
         let groupsAhead = Int((queue / 4).rounded(.up))
         let sorted = remaining.sorted()
         let wait = groupsAhead < sorted.count ? sorted[groupsAhead] : sorted.last! + game
-        let site = Site(id: id, name: name, address: "Demo data", latitude: lat, longitude: lon,
+        let site = Site(id: id, name: name, address: "1000 N Buffalo Grove Rd, Buffalo Grove, IL",
+                        latitude: lat, longitude: lon,
                         courtCount: n, health: .ok, queueCount: queue, queueWaiting: true,
                         waitSeconds: Int(wait), nextFreeSeconds: Int(sorted[0]),
                         groupsAhead: groupsAhead, updatedAt: now)
@@ -109,15 +113,14 @@ public actor DemoRepository: StatusRepository {
     }
 
     private func quietSite(id: String, name: String, now: Date) -> SiteSnapshot {
-        let site = Site(id: id, name: name, address: "Demo data", latitude: 41.89,
-                        longitude: -87.63, courtCount: 3, health: .ok, queueCount: 0,
+        let site = Site(id: id, name: name, address: "401 Aptakisic Rd, Buffalo Grove, IL",
+                        latitude: 42.159, longitude: -87.959, courtCount: 2, health: .ok,
+                        queueCount: 0,
                         queueWaiting: false, waitSeconds: 0, nextFreeSeconds: 0,
                         groupsAhead: 0, updatedAt: now)
         let courts = [
             CourtStatus(siteID: id, number: 1, state: .empty, occupancy: 0, updatedAt: now),
             CourtStatus(siteID: id, number: 2, state: .idle, occupancy: 4, onCourtSeconds: 1500,
-                        updatedAt: now),
-            CourtStatus(siteID: id, number: 3, state: .idle, occupancy: 2, onCourtSeconds: 300,
                         updatedAt: now),
         ]
         return SiteSnapshot(site: site, courts: courts)

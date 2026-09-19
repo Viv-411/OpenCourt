@@ -138,6 +138,9 @@ identify anyone, and a contact.
 - iOS app: court list, status for each court, wait time, and an offline/stale state.
 - A synthetic court simulator for building and testing everything without footage.
 - Snapshot logging once a minute (counts and states only).
+- Community features in the app (added 2026-09-19): accounts, profiles with skill level and
+  home park, an events hub (tournaments, open play, clinics, leagues, socials) with
+  sign-ups, favourite parks, and busy times by hour from the history.
 
 ### Out of scope
 
@@ -145,7 +148,9 @@ identify anyone, and a contact.
 - Face detection, recognition, or appearance-based re-identification.
 - Weatherproof permanent installation and solar power (after the pilot).
 - Push notifications (stretch).
-- Reservations or booking.
+- Reserving public courts. They are first-come-first-served and only the park district can
+  reserve them (by permit); events can say the organizer holds one.
+- Payments. Entry fees are shown; organizers collect them directly.
 
 ---
 

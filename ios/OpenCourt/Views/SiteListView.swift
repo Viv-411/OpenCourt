@@ -4,9 +4,9 @@ import SwiftUI
 
 struct SiteListView: View {
     @Environment(SiteStore.self) private var store
+    @Environment(FavoritesStore.self) private var favorites
     @State private var mode: Mode = .list
-    @State private var showingAbout = false
-    @State private var path: [Site] = []
+    @State private var path = NavigationPath()
 
     enum Mode: String, CaseIterable, Identifiable {
         case list = "List", map = "Map"
@@ -26,6 +26,7 @@ struct SiteListView: View {
             }
             .navigationTitle("OpenCourt")
             .navigationDestination(for: Site.self) { SiteDetailView(site: $0) }
+            .navigationDestination(for: CourtEvent.self) { EventDetailView(eventID: $0.id) }
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Picker("View", selection: $mode) {
@@ -34,11 +35,7 @@ struct SiteListView: View {
                     .pickerStyle(.segmented)
                     .frame(width: 160)
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("About", systemImage: "info.circle") { showingAbout = true }
-                }
             }
-            .sheet(isPresented: $showingAbout) { AboutView() }
             .task {
                 await store.loadSites()
                 openSiteFromLaunchArguments()
@@ -52,7 +49,7 @@ struct SiteListView: View {
         let args = ProcessInfo.processInfo.arguments
         guard path.isEmpty, let i = args.firstIndex(of: "-openSite"), i + 1 < args.count,
               let site = store.sites.first(where: { $0.id == args[i + 1] }) else { return }
-        path = [site]
+        path.append(site)
     }
 
     private var list: some View {
@@ -63,10 +60,28 @@ struct SiteListView: View {
             if let error = store.errorMessage {
                 Section { Label(error, systemImage: "exclamationmark.triangle") }
             }
-            Section {
-                ForEach(store.sites) { site in
-                    NavigationLink(value: site) { SiteRow(site: site, now: store.now) }
+            let starred = store.sites.filter { favorites.contains($0.id) }
+            let others = store.sites.filter { !favorites.contains($0.id) }
+            if !starred.isEmpty {
+                Section("Your parks") { rows(starred) }
+            }
+            Section(starred.isEmpty ? "" : "More parks") { rows(others) }
+        }
+    }
+
+    private func rows(_ list: [Site]) -> some View {
+        ForEach(list) { site in
+            NavigationLink(value: site) {
+                SiteRow(site: site, now: store.now, starred: favorites.contains(site.id))
+            }
+            .swipeActions(edge: .leading) {
+                Button {
+                    withAnimation { favorites.toggle(site.id) }
+                } label: {
+                    Label(favorites.contains(site.id) ? "Unstar" : "Star",
+                          systemImage: favorites.contains(site.id) ? "star.slash" : "star.fill")
                 }
+                .tint(Theme.amber)
             }
         }
     }
@@ -112,6 +127,7 @@ struct SiteListView: View {
 struct SiteRow: View {
     let site: Site
     let now: Date
+    var starred = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -120,7 +136,15 @@ struct SiteRow: View {
                 .foregroundStyle(color)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 2) {
-                Text(site.name).font(.headline)
+                HStack(spacing: 4) {
+                    Text(site.name).font(.headline)
+                    if starred {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundStyle(Theme.amber)
+                            .accessibilityLabel("Starred")
+                    }
+                }
                 Text(site.headline(at: now))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

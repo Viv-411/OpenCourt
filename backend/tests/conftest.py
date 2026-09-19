@@ -29,6 +29,20 @@ alter default privileges in schema public grant all on tables to service_role;
 -- Supabase grants table privileges to anon/authenticated by default; RLS does the gating.
 alter default privileges in schema public grant all on tables to anon, authenticated;
 create publication supabase_realtime;
+
+-- Supabase's auth schema, reduced to what the migrations use. auth.uid() reads the JWT
+-- subject the same way Supabase does; tests set it with set_config.
+create schema if not exists auth;
+create table if not exists auth.users (
+    id uuid primary key default gen_random_uuid(),
+    email text,
+    raw_user_meta_data jsonb not null default '{}'::jsonb
+);
+create or replace function auth.uid() returns uuid language sql stable as $f$
+    select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+$f$;
+grant usage on schema auth to anon, authenticated, service_role;
+grant execute on function auth.uid() to anon, authenticated, service_role;
 """
 
 
