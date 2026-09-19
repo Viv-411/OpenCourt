@@ -1,15 +1,19 @@
 # OpenCourt iOS
 
-SwiftUI app (iOS 17+) that shows live court status: which courts are open, how many people
-are waiting, and roughly how long the wait is.
+SwiftUI app (iOS 17+): live court status (which courts are open, how many people are
+waiting, roughly how long the wait is, busy times by hour), plus a community side: accounts,
+player profiles, and an events hub for tournaments, open play, clinics, leagues and socials.
+See `docs/GUIDE.md` §3 for a tour with screenshots.
 
 ```
 ios/
 ├── OpenCourt.xcodeproj     app project (sources folder is synced automatically)
-├── OpenCourt/              app: SwiftUI views, theme, entry point
+├── OpenCourt/              app: SwiftUI views (tabs, welcome, sign-in, events, profile), theme
 ├── OpenCourtKit/           Swift package
-│   ├── OpenCourtKit        models, decoding, freshness, formatting, SiteStore, demo feed
-│   └── OpenCourtSupabase   live repository (supabase-swift): fetch + Realtime "poke"
+│   ├── OpenCourtKit        models, decoding, stores (sites, session, events, favourites),
+│   │                       demo data for everything
+│   └── OpenCourtSupabase   live backend (supabase-swift): status, auth, events, profiles
+├── design/make_icon.py     draws the app icon
 └── Config/                 xcconfig + Info.plist (backend host/key)
 ```
 

@@ -1,7 +1,8 @@
 # OpenCourt backend (Supabase)
 
-Postgres + auto REST + Realtime. The whole backend is one migration:
-[`../supabase/migrations/20260916000000_init.sql`](../supabase/migrations/20260916000000_init.sql).
+Postgres + auto REST + Realtime. Two migrations: [`…_init.sql`](../supabase/migrations/20260916000000_init.sql) (courts and
+sensors) and [`…_community.sql`](../supabase/migrations/20260919000000_community.sql)
+(accounts, events, busy times).
 The `supabase/` folder lives at the repo root so the Supabase GitHub integration finds it.
 
 | Object | Purpose |
@@ -13,6 +14,11 @@ The `supabase/` folder lives at the repo root so the Supabase GitHub integration
 | `site_overview` (view) | What the app lists: status + `age_seconds` + `is_stale` |
 | `ingest_status(p_token, p_payload)` | The only write path, callable with the anon key |
 | `register_device`, `revoke_device`, `prune_history` | Admin-only (service role / SQL editor) |
+| `profiles` | One per account: display name, skill level, home park (visible to signed-in players) |
+| `events`, `event_listing` (view) | Tournaments, open play, clinics, leagues, socials; the view adds park name, organizer and sign-up count |
+| `event_registrations` | Who's going; visible only to that player and the organizer |
+| `register_for_event`, `unregister_from_event` | Sign-up functions that enforce capacity, cancellation and start time |
+| `site_busy_hours` (view) | Average people waiting by weekday and hour, last 8 weeks |
 
 ## Security model
 

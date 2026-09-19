@@ -12,6 +12,10 @@ public final class SupabaseStatusRepository: StatusRepository {
         client = SupabaseClient(supabaseURL: url, supabaseKey: anonKey)
     }
 
+    public init(client: SupabaseClient) {
+        self.client = client
+    }
+
     public func sites() async throws -> [Site] {
         try await client.from("site_overview")
             .select()
@@ -68,7 +72,7 @@ public final class SupabaseStatusRepository: StatusRepository {
     }
 }
 
-private extension PostgrestResponse {
+extension PostgrestResponse {
     func value<V: Decodable>(decoder: JSONDecoder) throws -> V {
         try decoder.decode(V.self, from: data)
     }

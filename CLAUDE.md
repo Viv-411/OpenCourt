@@ -91,7 +91,8 @@ cd backend && uv run pytest                        # SQL tests, no Docker needed
 cd ios/OpenCourtKit && swift test                  # Swift Testing
 cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
   -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build
-# app launch args: -demo (force demo data), -openSite <id>, -demoMinutes <n>
+# app launch args: -demo, -skipWelcome, -signedIn (demo), -tab courts|events|you,
+#   -openSite <id>, -openEvent <n>, -newEvent, -demoMinutes <n>
 ```
 
 ## Engineering conventions
@@ -150,6 +151,21 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
 - People join the line in parties of 1–4 and team up into foursomes.
 - Buffalo Grove, IL (BIPA). Test parks with 2, 4, 8, and more courts are available; the
   recommendation is to start with 4.
+
+## App and community features (2026-09-19)
+
+- Tabs: Courts (live status, busy-times chart, favourites, directions), Events
+  (tournaments / open play / clinics / leagues / socials, sign-ups), You (account, profile,
+  your events). Browsing never requires an account; posting and signing up do.
+- Backend: `supabase/migrations/20260919000000_community.sql` (profiles, events,
+  event_registrations, `event_listing`, `site_busy_hours`, `register_for_event`). Sign-ups
+  are private to the player and organizer; others see counts. Profiles are visible only to
+  signed-in players.
+- **No court booking.** Public courts are first-come-first-served; only the park district
+  can reserve them by permit. Events carry a `courts_reserved` flag instead. Don't build
+  booking of public courts unless the district runs reservations.
+- Demo mode (`-demo`) mirrors the real parks: `mike-rylko` (8 courts), `rick-drazner`
+  (2 courts), plus `demo-offline`.
 
 ## Open questions (see PLAN.md §13)
 

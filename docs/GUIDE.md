@@ -203,28 +203,52 @@ The tests check that:
 
 ## 3. iOS app (`ios/`): the window
 
-Open `ios/OpenCourt.xcodeproj` in Xcode, pick an iPhone simulator, and press Run. With no
-backend configured, it shows **demo data** and says so on screen.
+Open `ios/OpenCourt.xcodeproj` in Xcode, pick an iPhone simulator, and press Run. With
+`ios/Config/Secrets.xcconfig` filled in (it is), the app talks to your Supabase project;
+add `-demo` to the launch arguments for built-in demo data (it says so on screen).
 
-| Sites (demo) | A court whose time is up (demo) | Sensor offline (demo) | Live from Supabase |
-|---|---|---|---|
-| ![](screenshots/sites.png) | ![](screenshots/court-time-up.png) | ![](screenshots/sensor-offline.png) | ![](screenshots/live-simulator-site.png) |
+| Welcome | Courts | A park | Events | An event | Post an event | You |
+|---|---|---|---|---|---|---|
+| ![](screenshots/app-welcome.png) | ![](screenshots/app-courts.png) | ![](screenshots/app-park.png) | ![](screenshots/app-events.png) | ![](screenshots/app-event.png) | ![](screenshots/app-new-event.png) | ![](screenshots/app-you.png) |
 
-With `ios/Config/Secrets.xcconfig` filled in (it is), the app reads your real Supabase
-project instead: the real parks appear as "No data yet" until a sensor reports, and the
-"Simulator" site goes live whenever `opencourt simulate --publish` is running.
+**Three tabs**, and browsing never needs an account:
 
-- Each court card shows its state, the players seen on it, the time on court while people
-  waited, and a dot that mirrors the real light (off, pulsing, or solid).
-- When the sensor goes quiet, the numbers grey out and a banner says so. The app never
-  pretends stale data is live.
-- Launch arguments for testing, set in Xcode under Scheme → Arguments:
-  - `-demo` forces demo data;
-  - `-openSite demo-riverside` opens that site directly;
-  - `-demoMinutes 4` fast-forwards the demo so a court shows "Time up."
+- **Courts.** Every park with its live headline ("6 waiting · about 5 min", "Court open
+  now", "Sensor offline"), as a list or a map. Swipe a park to **star** it; starred parks
+  stay on top. A park's page has:
+  - the wait if you arrive now, people in line, and when the next court frees up;
+  - a card per court whose dot mirrors the real light (off, pulsing, solid "Time up");
+  - **busy times**: average people waiting by hour for any weekday, from the last eight
+    weeks of history (fills in as the sensor runs);
+  - events coming up at that park, park info, **directions** (Apple Maps) and the star.
+- **Events.** Tournaments, open play, clinics, leagues and socials, grouped by day and
+  filterable by type. An event shows when and where, format, skill range, spots left,
+  entry fee, whether the organizer has a park-district permit for the courts, the
+  description and a contact. **"I'm going"** signs you up (capacity is enforced on the
+  server); organizers can cancel. **+** posts a new event.
+- **You.** Sign in or create an account (email and password), edit your name, skill level
+  (the usual 2.0–8.0 scale) and home park, see events you're going to or organizing,
+  replay the welcome tour, sign out.
+
+**First launch** shows a four-page welcome: live courts, the fair-turns light, privacy,
+and events, then "Create an account", "I have an account" or "Continue without an account".
+
+**Why there's no "book a court" button.** Public courts at Rylko and Drazner are free and
+first-come-first-served; only the park district can reserve them (by permit). An app
+"booking" would carry no authority and would clash with the rotation the whole project
+supports. Events can instead say the organizer holds a permit, and the post form tells
+organizers how to get one. If the district ever runs reservations, the app can link to them.
+
+**What's private:** display names and skill levels are visible only to signed-in players.
+Who signed up for an event is visible only to that player and the organizer; everyone else
+sees a count. Nothing in the community features comes from the camera.
+
+Launch arguments for testing (Xcode → Scheme → Arguments): `-demo`, `-skipWelcome`,
+`-signedIn` (demo only), `-tab courts|events|you`, `-openSite <id>`, `-openEvent <n>`,
+`-newEvent`, `-demoMinutes <n>`.
 
 ```bash
-cd ios/OpenCourtKit && swift test   # 20 tests: decoding, staleness, wording, clocks, store
+cd ios/OpenCourtKit && swift test   # 30 tests: decoding, staleness, wording, clocks, events, sign-in
 ```
 
 ---
