@@ -45,6 +45,14 @@ def test_signup_creates_a_profile(db):
     assert names[u] == "Sam" and names[v] == "lee"
 
 
+def test_google_accounts_use_their_google_name(db):
+    db.execute("insert into auth.users (email, raw_user_meta_data) values (%s, %s)",
+               ("pat@gmail.com", json.dumps({"full_name": "Pat Rivera", "name": "Pat"})))
+    name = db.execute("select display_name from public.profiles p join auth.users u "
+                      "on u.id = p.id where u.email = 'pat@gmail.com'").fetchone()[0]
+    assert name == "Pat Rivera"
+
+
 def test_profiles_are_private_to_signed_in_players(db):
     make_user(db)
     act_as(db, None)

@@ -20,3 +20,26 @@ enabled = true
 
 [auth]
 enabled = true
+# Email links land on web/auth/ (GitHub Pages), which hands off to the app; Google sign-in
+# returns straight to the app's URL scheme.
+site_url = "https://viv-411.github.io/OpenCourt/"
+additional_redirect_urls = ["opencourt://auth/**", "https://viv-411.github.io/OpenCourt/auth/**"]
+
+[auth.email]
+enable_confirmations = true
+
+[auth.email.template.confirmation]
+subject = "Confirm your OpenCourt account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your OpenCourt password"
+content_path = "./supabase/templates/recovery.html"
+
+# Client ID and secret come from a Google Cloud "Web application" OAuth client whose
+# redirect URI is https://<project>.supabase.co/auth/v1/callback. Never commit the secret.
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+skip_nonce_check = false

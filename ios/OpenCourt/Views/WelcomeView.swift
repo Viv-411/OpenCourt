@@ -4,6 +4,7 @@ import SwiftUI
 /// First-launch introduction: what OpenCourt does, how the light works, and the privacy
 /// promise. Ends with an optional account step; browsing never needs one.
 struct WelcomeView: View {
+    @Environment(SessionStore.self) private var session
     let onDone: () -> Void
     @State private var page = 0
     @State private var signIn: SignInView.Mode?
@@ -56,10 +57,13 @@ struct WelcomeView: View {
                     }
                     .buttonStyle(.borderedProminent)
                 } else {
+                    GoogleSignInButton {
+                        Task { if await session.signInWithGoogle(), session.isSignedIn { onDone() } }
+                    }
                     Button {
                         signIn = .create
                     } label: {
-                        Text("Create an account").frame(maxWidth: .infinity)
+                        Text("Create an account with email").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
                     Button {

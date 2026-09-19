@@ -52,6 +52,23 @@ public actor DemoAuthService: AuthService {
     }
 
     public func sendPasswordReset(email: String) async throws {}
+
+    public func signInWithGoogle() async throws -> Account {
+        try await signIn(email: "you@gmail.com", password: "google")
+    }
+
+    public func handleRedirect(_ url: URL) async throws -> AuthRedirect {
+        let a = Account(id: DemoCommunityRepository.demoUserID, email: "you@example.com")
+        account = a
+        publish()
+        return url.path.contains("reset") ? .choosePassword(a) : .signedIn(a)
+    }
+
+    public func updatePassword(_ password: String) async throws {
+        guard password.count >= 6 else {
+            throw CommunityError.server("use at least 6 characters for the password")
+        }
+    }
 }
 
 /// Sample events and profiles for demo mode, stored in memory.
