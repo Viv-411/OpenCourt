@@ -29,8 +29,14 @@ class VideoFileSource:
             raise FileNotFoundError(f"cannot open video {path}")
         self.fps = self._cap.get(cv2.CAP_PROP_FPS) or 30.0
         self.frame_count = int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        self.width = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self._step = max(1, round(self.fps / target_fps))
         self._realtime = realtime
+
+    @property
+    def step(self) -> int:
+        return self._step
 
     def frames(self) -> Iterator[tuple[float, Any]]:
         idx = 0
