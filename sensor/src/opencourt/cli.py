@@ -27,9 +27,9 @@ def _config_path(arg: str | None) -> Path:
     return SENSOR_ROOT / "config" / "example.yaml"
 
 
-def _load(args) -> tuple[Path, Config]:
+def _load(args, need_zones: bool = True) -> tuple[Path, Config]:
     path = _config_path(args.config)
-    cfg = load_config(path)
+    cfg = load_config(path, load_zone_file=need_zones)
     if getattr(args, "zones", None):
         cfg = cfg.model_copy(update={"zones": load_zones(args.zones)})
         Config.model_validate(cfg.model_dump())
@@ -73,9 +73,42 @@ def cmd_run(args) -> int:
     return 0
 
 
-def cmd_replay(args) -> int:
+def cmd_detect(args) -> int:
+    """Run the detector over a recording once and cache the boxes (never the frames)."""
     from .capture import VideoFileSource
     from .detect import YoloTracker
+    from .trackfile import TrackFileHeader, write_frame, write_header
+
+    _, cfg = _load(args, need_zones=False)
+    det_cfg = cfg.detector.model_copy(update={
+        k: v for k, v in {"imgsz": args.imgsz, "confidence": args.conf,
+                          "device": args.device}.items() if v is not None})
+    src = VideoFileSource(args.video, args.fps)
+    out = Path(args.out or str(Path(args.video).with_suffix("")) + ".tracks.jsonl")
+    detector = YoloTracker(det_cfg, SENSOR_ROOT)
+    total = src.frame_count / src.fps if src.frame_count else 0
+    t0 = time.monotonic()
+    n = people = 0
+    with open(out, "w") as f:
+        write_header(f, TrackFileHeader(video=Path(args.video).name, fps=src.fps,
+                                        size=(src.width, src.height), model=det_cfg.model,
+                                        imgsz=det_cfg.imgsz, step=src.step))
+        for t, frame in src.frames():
+            tracks = detector(frame)
+            write_frame(f, t, tracks)
+            n += 1
+            people += len(tracks)
+            if n % 200 == 0:
+                rate = n / (time.monotonic() - t0)
+                print(f"  {t / 60:5.1f}/{total / 60:.1f} min  {rate:5.1f} frames/s  "
+                      f"avg {people / n:.1f} people/frame", file=sys.stderr)
+    src.close()
+    print(f"wrote {out} ({n} frames, {n / (time.monotonic() - t0):.1f} frames/s)",
+          file=sys.stderr)
+    return 0
+
+
+def cmd_replay(args) -> int:
     from .engine import Engine
     from .lights import make_lights
     from .publish import NullPublisher
@@ -105,15 +138,29 @@ def cmd_replay(args) -> int:
         events=events_f,
         on_snapshot=on_snapshot,
     )
-    overlay = None
-    if args.show:
-        from .overlay import Overlay
+    if args.tracks:
+        # Cached detections: no video decoding, no detector, seconds instead of minutes.
+        from .trackfile import read
 
-        overlay = Overlay(zones)
-    detector = YoloTracker(cfg.detector, SENSOR_ROOT)
-    fps = args.fps or cfg.capture.target_fps
-    run_camera(engine, lambda: VideoFileSource(args.video, fps, realtime=args.realtime),
-               detector, sinks, overlay, reconnect=False)
+        _, frames = read(args.tracks)
+        try:
+            for obs in frames:
+                sinks.handle(engine.step(obs))
+        finally:
+            sinks.close()
+    else:
+        from .capture import VideoFileSource
+        from .detect import YoloTracker
+
+        overlay = None
+        if args.show:
+            from .overlay import Overlay
+
+            overlay = Overlay(zones)
+        detector = YoloTracker(cfg.detector, SENSOR_ROOT)
+        fps = args.fps or cfg.capture.target_fps
+        run_camera(engine, lambda: VideoFileSource(args.video, fps, realtime=args.realtime),
+                   detector, sinks, overlay, reconnect=False)
     if events_f:
         events_f.close()
         print(f"wrote {events_path}", file=sys.stderr)
@@ -285,8 +332,19 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--show", action="store_true", help="debug overlay window (not recorded)")
     sp.set_defaults(func=cmd_run)
 
-    sp = with_config(sub.add_parser("replay", help="run the pipeline on recorded footage"))
+    sp = with_config(sub.add_parser("detect", help="run the detector over footage once and "
+                                                   "cache the boxes for fast replays"))
     sp.add_argument("video")
+    sp.add_argument("--out", help="default: <video>.tracks.jsonl next to the video")
+    sp.add_argument("--fps", type=float, default=10.0, help="frames per second to process")
+    sp.add_argument("--imgsz", type=int, help="detector input size (default from config)")
+    sp.add_argument("--conf", type=float, help="detector confidence (default from config)")
+    sp.add_argument("--device", help="cpu | mps (default from config)")
+    sp.set_defaults(func=cmd_detect)
+
+    sp = with_config(sub.add_parser("replay", help="run the pipeline on recorded footage"))
+    sp.add_argument("video", nargs="?", help="the recording (not needed with --tracks)")
+    sp.add_argument("--tracks", help="cached detections from `opencourt detect` (fast)")
     sp.add_argument("--events", help="write line events as JSON lines")
     sp.add_argument("--fps", type=float, help="processing frame rate (default: capture.target_fps)")
     sp.add_argument("--realtime", action="store_true")

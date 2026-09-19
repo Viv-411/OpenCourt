@@ -51,6 +51,26 @@ competition deadline.
   `OpenCourtKit` and `OpenCourtSupabase`.
 - `docs/`: the plan, the review, and the archived v1.
 - `scripts/env.sh`: **source this first** in every shell (see "This machine").
+- `sensor/tools/`: dev-only scripts for recorded footage (empty-court still, foot heatmaps,
+  annotated video). They are *outside* the `opencourt` package on purpose, so the privacy
+  test can keep proving the deployed code never writes images; they write only into the
+  git-ignored `sensor/data/`.
+
+## Working with real footage
+
+```bash
+cd sensor
+uv run opencourt detect data/footage/clip.MOV --fps 10 --imgsz 1280 --device mps   # once, ~1/3 real time
+uv run python tools/footage_background.py data/footage/clip.MOV                   # empty-court still
+uv run python tools/footage_heatmap.py data/footage/clip.tracks.jsonl data/footage/clip.background.jpg out.jpg --zones data/zones/clip.yaml
+uv run opencourt replay --tracks data/footage/clip.tracks.jsonl -c data/configs/clip.yaml --events data/footage/clip.events.jsonl
+uv run python tools/render_annotated.py data/footage/clip.MOV --tracks data/footage/clip.tracks.jsonl -c data/configs/clip.yaml
+```
+
+Per-clip zones and configs live in `sensor/data/zones/` and `sensor/data/configs/`
+(git-ignored, alongside the footage). First clip: `Pickleball_Rick_Drazner_Test1.MOV`
+(2026-09-18, 5 friends, night, one full court + part of the second, camera at head height
+on the near corner).
 
 ## Commands
 
