@@ -31,6 +31,9 @@ class Zones(_Model):
     image_size: tuple[int, int] | None = None  # (width, height) the polygons were drawn on
     courts: dict[int, list[Point]]
     queue: list[Point]
+    # Things the detector mistakes for people (a sign post, a pole, a trash can). Any
+    # detection centred inside one of these is dropped. Drawn once at install time.
+    ignore: list[list[Point]] = Field(default_factory=list)
 
     @field_validator("courts")
     @classmethod
@@ -49,6 +52,14 @@ class Zones(_Model):
     def _queue_poly(cls, v: list[Point]) -> list[Point]:
         if len(v) < 3:
             raise ValueError("queue polygon needs at least 3 points")
+        return v
+
+    @field_validator("ignore")
+    @classmethod
+    def _ignore_polys(cls, v: list[list[Point]]) -> list[list[Point]]:
+        for i, poly in enumerate(v):
+            if len(poly) < 3:
+                raise ValueError(f"ignore area {i + 1} needs at least 3 points")
         return v
 
     @property
@@ -219,6 +230,9 @@ def save_zones(zones: Zones, path: str | Path) -> None:
     data = zones.model_dump(mode="json")
     data["courts"] = {int(k): [list(p) for p in v] for k, v in data["courts"].items()}
     data["queue"] = [list(p) for p in data["queue"]]
+    data["ignore"] = [[list(p) for p in poly] for poly in data.get("ignore", [])]
+    if not data["ignore"]:
+        del data["ignore"]
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         f.write("# Written by `opencourt calibrate`. "

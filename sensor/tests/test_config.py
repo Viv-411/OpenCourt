@@ -51,3 +51,14 @@ def test_zones_file_is_loaded_relative_to_project(tmp_path):
     (tmp_path / "config" / "main.yaml").write_text("zones_file: config/zones.yaml\n")
     cfg = load_config(tmp_path / "config" / "main.yaml")
     assert cfg.zones is not None and cfg.zones.court_count == 1
+
+
+def test_ignore_areas_round_trip(tmp_path):
+    z = Zones(courts={1: SQ}, queue=SQ, ignore=[[(5, 5), (6, 5), (6, 6)]])
+    save_zones(z, tmp_path / "z.yaml")
+    assert load_zones(tmp_path / "z.yaml").ignore == [[(5, 5), (6, 5), (6, 6)]]
+
+
+def test_ignore_area_needs_three_points():
+    with pytest.raises(ValidationError):
+        Zones(courts={1: SQ}, queue=SQ, ignore=[[(0, 0), (1, 1)]])

@@ -181,3 +181,15 @@ def test_payload_contains_no_track_ids_or_positions():
     assert "track" not in flat and "bbox" not in flat and "foot" not in flat
     assert payload["courts"][0]["number"] == 1
     assert payload["generated_at"] == 1_700_000_000.0
+
+
+def test_ignore_area_drops_a_post_detected_as_a_person():
+    post = [(200, 50), (240, 50), (240, 250), (200, 250)]  # inside court 1
+    zones = Zones(courts=ZONES.courts, queue=ZONES.queue, ignore=[post])
+    s = Scene(Engine(Config(zones=zones)))
+    s.place([99], [(220, 240)])  # a "person" whose box centre sits on the post
+    s.run(60)
+    assert s.snap.courts[0].occupancy == 0
+    s.place(range(1, 5), C1)
+    s.run(60)
+    assert s.snap.courts[0].occupancy == 4
