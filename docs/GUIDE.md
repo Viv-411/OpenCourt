@@ -288,8 +288,21 @@ scripts/test-all.sh --fast   # skip the 2-hour simulations
       2. *Supabase → Authentication → URL Configuration:* Site URL
          `https://viv-411.github.io/OpenCourt/`; redirect URLs `opencourt://auth/**` and
          `https://viv-411.github.io/OpenCourt/auth/**`.
-      3. *Supabase → Authentication → Emails:* paste `supabase/templates/confirmation.html`
-         and `recovery.html` (subjects are in `supabase/config.toml`).
+      3. *Email sending:* Supabase's built-in email service sends only 2 messages an hour
+         and won't let you change the subject or the design, so the project needs its own
+         SMTP. Easiest for the pilot: a Gmail **app password** (Google Account → Security →
+         2-Step Verification → App passwords), used as `smtp.gmail.com:465`. Then set
+         everything — SMTP, both templates, subjects, URLs — in one go:
+         ```bash
+         export SUPABASE_ACCESS_TOKEN='sbp_…'    # dashboard → account → access tokens
+         export SMTP_HOST=smtp.gmail.com SMTP_PORT=465
+         export SMTP_USER='you@gmail.com' SMTP_FROM='you@gmail.com'
+         export SMTP_PASS='abcd efgh ijkl mnop'  # the app password
+         scripts/push-auth-config.sh
+         ```
+         Nothing secret is written to the repo; the script reads the environment. Before a
+         real launch, buy a domain and switch to Resend or Postmark so mail comes from
+         `noreply@…` with SPF/DKIM/DMARC set up, instead of a personal Gmail address.
       4. *Google:* in Google Cloud Console make an OAuth client of type "Web application"
          with redirect URI `https://inkvqajxepcaqjubhfye.supabase.co/auth/v1/callback`, then
          paste its client ID and secret into Supabase → Authentication → Sign In / Providers
