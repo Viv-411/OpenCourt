@@ -12,6 +12,10 @@ public final class SessionStore {
     public var errorMessage: String?
     /// Set after sign-up when the server wants the email confirmed first.
     public private(set) var awaitingConfirmation: String?
+    /// Signed in from a password-reset link; the app should ask for a new password.
+    public var needsNewPassword = false
+    /// A one-off message after an email link was handled ("You're signed in").
+    public var linkMessage: String?
 
     public let auth: any AuthService
     private let community: any CommunityRepository
@@ -68,6 +72,14 @@ public final class SessionStore {
         }
     }
 
+    public func signInWithGoogle() async -> Bool {
+        await run {
+            let a = try await self.auth.signInWithGoogle()
+            self.account = a
+            await self.loadProfile()
+        }
+    }
+
     public func signOut() async {
         _ = await run {
             try await self.auth.signOut()
@@ -89,6 +101,35 @@ public final class SessionStore {
 
     public func clearConfirmation() { awaitingConfirmation = nil }
 
+    /// An email link opened the app.
+    public func handle(url: URL) async {
+        guard url.scheme == "opencourt", url.host() == "auth" else { return }
+        do {
+            switch try await auth.handleRedirect(url) {
+            case .signedIn(let a):
+                account = a
+                awaitingConfirmation = nil
+                await loadProfile()
+                linkMessage = "Your email is confirmed and you're signed in."
+            case .choosePassword(let a):
+                account = a
+                await loadProfile()
+                needsNewPassword = true
+            }
+        } catch {
+            linkMessage = "That link didn't work (it may have expired or already been used). "
+                + "Try signing in, or ask for a new email."
+        }
+    }
+
+    public func updatePassword(_ password: String) async -> Bool {
+        await run {
+            try await self.auth.updatePassword(password)
+            self.needsNewPassword = false
+            self.linkMessage = "Your password is updated."
+        }
+    }
+
     private func run(_ work: @escaping @MainActor () async throws -> Void) async -> Bool {
         isWorking = true
         errorMessage = nil
@@ -96,6 +137,8 @@ public final class SessionStore {
         do {
             try await work()
             return true
+        } catch is CancellationError {
+            return false  // the person backed out; nothing to report
         } catch {
             errorMessage = SiteStore.describe(error)
             return false

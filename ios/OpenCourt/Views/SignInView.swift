@@ -48,6 +48,22 @@ struct SignInView: View {
     private var form: some View {
         Form {
             Section {
+                GoogleSignInButton {
+                    Task {
+                        if await session.signInWithGoogle(), session.isSignedIn {
+                            onSignedIn()
+                            dismiss()
+                        }
+                    }
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+            } footer: {
+                Text("or use your email")
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+            }
+            Section {
                 Picker("Mode", selection: $mode) {
                     ForEach(Mode.allCases) { Text($0.rawValue).tag($0) }
                 }
@@ -114,7 +130,8 @@ struct SignInView: View {
         ContentUnavailableView {
             Label("Check your email", systemImage: "envelope.badge.fill")
         } description: {
-            Text("We sent a confirmation link to \(address). Open it, then come back and sign in.")
+            Text("We sent a link to \(address). Open it on this phone and you'll be signed in "
+                 + "automatically. Opened it somewhere else? Come back and sign in.")
         } actions: {
             Button("Sign in") {
                 session.clearConfirmation()

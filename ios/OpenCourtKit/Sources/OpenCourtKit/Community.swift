@@ -250,6 +250,13 @@ public struct Account: Sendable, Equatable {
     }
 }
 
+/// What an email link (confirmation or password reset) turned into once it reached the app.
+public enum AuthRedirect: Sendable, Equatable {
+    case signedIn(Account)
+    /// Signed in from a password-reset link: ask for a new password next.
+    case choosePassword(Account)
+}
+
 public enum SignUpResult: Sendable, Equatable {
     case signedIn(Account)
     /// The server wants the email address confirmed before the first sign-in.
@@ -307,6 +314,12 @@ public protocol AuthService: Sendable {
     func signUp(email: String, password: String, displayName: String) async throws -> SignUpResult
     func signOut() async throws
     func sendPasswordReset(email: String) async throws
+    /// Sign in with a Google account (throws `CancellationError` if the person backs out).
+    func signInWithGoogle() async throws -> Account
+    /// Finish signing in from a link in a confirmation or reset email
+    /// (`opencourt://auth/confirm?code=…` or `opencourt://auth/reset?code=…`).
+    func handleRedirect(_ url: URL) async throws -> AuthRedirect
+    func updatePassword(_ password: String) async throws
 }
 
 public protocol CommunityRepository: Sendable {

@@ -281,6 +281,19 @@ scripts/test-all.sh --fast   # skip the 2-hour simulations
       simulator connected (2026-09-17). `cd sensor && uv run opencourt simulate -c config/local.yaml
       --publish --site sim-site --speed 8` feeds the live database; the app (built with
       `ios/Config/Secrets.xcconfig` in place) shows it under "Simulator".
+- [ ] **Sign-in setup** (the app code is done; these switch it on):
+      1. *Email links:* publish `web/` to a `gh-pages` branch and turn on GitHub Pages
+         (Settings → Pages → `gh-pages` / root). Confirmation and reset emails link to
+         `https://viv-411.github.io/OpenCourt/auth/`, which opens the app.
+      2. *Supabase → Authentication → URL Configuration:* Site URL
+         `https://viv-411.github.io/OpenCourt/`; redirect URLs `opencourt://auth/**` and
+         `https://viv-411.github.io/OpenCourt/auth/**`.
+      3. *Supabase → Authentication → Emails:* paste `supabase/templates/confirmation.html`
+         and `recovery.html` (subjects are in `supabase/config.toml`).
+      4. *Google:* in Google Cloud Console make an OAuth client of type "Web application"
+         with redirect URI `https://inkvqajxepcaqjubhfye.supabase.co/auth/v1/callback`, then
+         paste its client ID and secret into Supabase → Authentication → Sign In / Providers
+         → Google.
 - [ ] **Buy the hardware** (PLAN §8): a Pi 5, Camera Module 3 Wide, a mount, 12 V amber
       lights, and MOSFETs.
 - [ ] Optional: join the **Apple Developer Program** if you want TestFlight. A free account

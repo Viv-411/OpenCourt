@@ -28,6 +28,18 @@ struct RootView: View {
             async let upcoming: Void = events.load(signedIn: session.isSignedIn)
             _ = await (parks, upcoming)
         }
+        .onOpenURL { url in
+            Task { await session.handle(url: url) }
+        }
+        .sheet(isPresented: Binding(get: { session.needsNewPassword },
+                                    set: { session.needsNewPassword = $0 })) {
+            NewPasswordView()
+        }
+        .alert(session.linkMessage ?? "", isPresented: Binding(
+            get: { session.linkMessage != nil && !session.needsNewPassword },
+            set: { if !$0 { session.linkMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        }
         .onChange(of: session.account) { _, account in
             Task { await events.load(signedIn: account != nil) }
         }

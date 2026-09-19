@@ -1,3 +1,4 @@
+import AuthenticationServices
 import Foundation
 import OpenCourtKit
 import Supabase
@@ -10,18 +11,34 @@ public final class SupabaseBackend: Sendable {
     public let auth: SupabaseAuthService
     public let community: SupabaseCommunityRepository
 
-    public init(url: URL, anonKey: String) {
+    /// `emailLinkPage` is the web page confirmation and reset emails link to; it hands off to
+    /// the app on a phone and explains what happened anywhere else (web/auth/index.html).
+    public init(url: URL, anonKey: String, emailLinkPage: URL? = nil) {
         client = SupabaseClient(supabaseURL: url, supabaseKey: anonKey)
         status = SupabaseStatusRepository(client: client)
-        auth = SupabaseAuthService(client: client)
+        auth = SupabaseAuthService(client: client, emailLinkPage: emailLinkPage)
         community = SupabaseCommunityRepository(client: client)
     }
 }
 
 public final class SupabaseAuthService: AuthService {
     private let client: SupabaseClient
+    private let emailLinkPage: URL?
+    /// Where Google sends people back after they choose an account (must be in Supabase's
+    /// redirect allow-list).
+    public static let oauthCallback = URL(string: "opencourt://auth/callback")!
 
-    init(client: SupabaseClient) { self.client = client }
+    init(client: SupabaseClient, emailLinkPage: URL?) {
+        self.client = client
+        self.emailLinkPage = emailLinkPage
+    }
+
+    private func linkPage(flow: String) -> URL? {
+        guard let emailLinkPage,
+              var c = URLComponents(url: emailLinkPage, resolvingAgainstBaseURL: false) else { return nil }
+        c.queryItems = [URLQueryItem(name: "flow", value: flow)]
+        return c.url
+    }
 
     private static func account(_ user: User) -> Account {
         Account(id: user.id, email: user.email)
@@ -56,7 +73,8 @@ public final class SupabaseAuthService: AuthService {
         do {
             let response = try await client.auth.signUp(
                 email: email, password: password,
-                data: displayName.isEmpty ? nil : ["display_name": .string(displayName)])
+                data: displayName.isEmpty ? nil : ["display_name": .string(displayName)],
+                redirectTo: linkPage(flow: "confirm"))
             switch response {
             case .session(let session): return .signedIn(Self.account(session.user))
             case .user: return .confirmEmail
@@ -71,7 +89,35 @@ public final class SupabaseAuthService: AuthService {
     }
 
     public func sendPasswordReset(email: String) async throws {
-        do { try await client.auth.resetPasswordForEmail(email) } catch { throw friendly(error) }
+        do {
+            try await client.auth.resetPasswordForEmail(email, redirectTo: linkPage(flow: "reset"))
+        } catch {
+            throw friendly(error)
+        }
+    }
+
+    public func signInWithGoogle() async throws -> Account {
+        do {
+            let session = try await client.auth.signInWithOAuth(
+                provider: .google, redirectTo: Self.oauthCallback)
+            return Self.account(session.user)
+        } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
+            throw CancellationError()
+        } catch {
+            throw friendly(error)
+        }
+    }
+
+    public func handleRedirect(_ url: URL) async throws -> AuthRedirect {
+        let session = try await client.auth.session(from: url)
+        let account = Self.account(session.user)
+        return url.path.contains("reset") ? .choosePassword(account) : .signedIn(account)
+    }
+
+    public func updatePassword(_ password: String) async throws {
+        do { _ = try await client.auth.update(user: UserAttributes(password: password)) } catch {
+            throw friendly(error)
+        }
     }
 }
 
