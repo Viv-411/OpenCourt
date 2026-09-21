@@ -251,6 +251,34 @@ Launch arguments for testing (Xcode → Scheme → Arguments): `-demo`, `-skipWe
 cd ios/OpenCourtKit && swift test   # 30 tests: decoding, staleness, wording, clocks, events, sign-in
 ```
 
+### Putting it on a real iPhone
+
+**Today, free, your phone only.** A free Apple ID signs the app for 7 days, then it stops
+opening and you plug in and run it again.
+
+1. On the iPhone: Settings → Privacy & Security → **Developer Mode** → on, then reboot.
+2. Xcode → Settings → Accounts → add your Apple ID.
+3. Open `ios/OpenCourt.xcodeproj`, pick the **OpenCourt** target → Signing & Capabilities →
+   Automatically manage signing → Team = your personal team. If it objects that the bundle
+   ID is taken, change `app.opencourt.OpenCourt` to something like `app.opencourt.vb`.
+4. Plug the phone in, trust the computer, choose it as the run destination, press Run.
+5. First launch: iPhone → Settings → General → VPN & Device Management → trust your
+   developer certificate.
+
+**For other people: TestFlight**, which needs the Apple Developer Program ($99/year, ID
+verification can take a day or two). Worth it once park testers need the app.
+
+1. App Store Connect → Apps → **+** → New App, bundle ID `app.opencourt.OpenCourt`.
+2. In Xcode set the team on the target, then Product → **Archive** (the scheme's Run
+   configuration must be Release) → Distribute App → TestFlight & App Store.
+3. App Store Connect → TestFlight → add testers. **Internal** testers (up to 100, each
+   needs a role on your team) get the build in minutes, no review. **External** testers (up
+   to 10,000, invited by email or a public link) need Beta App Review once, usually a day.
+4. Bump `CURRENT_PROJECT_VERSION` for every upload; builds expire after 90 days.
+
+`ITSAppUsesNonExemptEncryption` is already set to false in `Config/Info.plist` (the app only
+uses HTTPS), so uploads skip the export-compliance question.
+
 ---
 
 ## 4. Test everything at once
