@@ -92,7 +92,7 @@ cd ios/OpenCourtKit && swift test                  # Swift Testing
 cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
   -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build
 # app launch args: -demo, -skipWelcome, -signedIn (demo), -tab courts|events|you,
-#   -openSite <id>, -openEvent <n>, -newEvent, -demoMinutes <n>
+#   -view list|map, -openSite <id>, -openEvent <n>, -newEvent, -demoMinutes <n>
 ```
 
 ## Engineering conventions
@@ -166,6 +166,11 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
   booking of public courts unless the district runs reservations.
 - Demo mode (`-demo`) mirrors the real parks: `mike-rylko` (8 courts), `rick-drazner`
   (2 courts), plus `demo-offline`.
+- **Location** (2026-09-21): the Courts tab sorts parks by distance and shows how far each
+  one is. `LocationStore` (app target) wraps CoreLocation; the maths is `Nearby.swift` in the
+  kit, so it stays testable and framework-free. The phone's position is used on the device
+  only — never published, stored in the database, or attached to anything a person posts.
+  Ask for it in context (the card in the list), never on first launch.
 
 ## Open questions (see PLAN.md §13)
 

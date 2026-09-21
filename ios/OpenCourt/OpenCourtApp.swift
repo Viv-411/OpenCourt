@@ -6,6 +6,7 @@ import SwiftUI
 struct OpenCourtApp: App {
     @State private var app = AppConfig.make()
     @State private var favorites = FavoritesStore()
+    @State private var location = LocationStore()
 
     var body: some Scene {
         WindowGroup {
@@ -14,6 +15,7 @@ struct OpenCourtApp: App {
                 .environment(app.session)
                 .environment(app.events)
                 .environment(favorites)
+                .environment(location)
                 .tint(Theme.accent)
         }
     }

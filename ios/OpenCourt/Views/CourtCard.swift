@@ -29,8 +29,10 @@ struct CourtCard: View {
             }
         }
         .padding()
-        .background(background, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(border, lineWidth: 1.5))
+        .background(background,
+                    in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+            .strokeBorder(border, lineWidth: 1.5))
         .opacity(dimmed ? 0.55 : 1)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)

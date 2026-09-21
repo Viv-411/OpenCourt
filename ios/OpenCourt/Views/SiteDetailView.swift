@@ -5,6 +5,7 @@ struct SiteDetailView: View {
     @Environment(SiteStore.self) private var store
     @Environment(EventsStore.self) private var events
     @Environment(FavoritesStore.self) private var favorites
+    @Environment(LocationStore.self) private var location
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     let site: Site
@@ -16,11 +17,16 @@ struct SiteDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if store.isDemo { DemoBadge() }
                 if let snapshot {
                     let freshness = snapshot.freshness(at: store.now)
-                    FreshnessBanner(freshness: freshness, updatedAt: snapshot.site.updatedAt,
-                                    now: store.now)
+                    HStack {
+                        FreshnessBanner(freshness: freshness, updatedAt: snapshot.site.updatedAt,
+                                        now: store.now)
+                        if store.isDemo {
+                            Spacer(minLength: 8)
+                            DemoBadge()
+                        }
+                    }
                     WaitSummary(site: snapshot.site, trustworthy: freshness.isTrustworthy)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)],
                               spacing: 12) {
@@ -53,6 +59,7 @@ struct SiteDetailView: View {
                           systemImage: favorites.contains(site.id) ? "star.fill" : "star")
                 }
                 .tint(Theme.amber)
+                .sensoryFeedback(.selection, trigger: favorites.ids)
                 if let lat = site.latitude, let lon = site.longitude,
                    let url = directionsURL(latitude: lat, longitude: lon, name: site.name) {
                     Button("Directions", systemImage: "car.fill") { openURL(url) }
@@ -77,8 +84,7 @@ extension SiteDetailView {
                 ForEach(Array(here)) { e in
                     NavigationLink(value: e) {
                         EventRow(event: e, going: events.going.contains(e.id))
-                            .padding(10)
-                            .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+                            .card(10)
                     }
                     .buttonStyle(.plain)
                 }
@@ -89,6 +95,10 @@ extension SiteDetailView {
     func parkInfo(_ s: Site) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("About this park").font(.headline)
+            if let distance = s.distanceText(from: location.coordinate) {
+                Label("\(distance) away", systemImage: "location.fill")
+                    .foregroundStyle(Theme.accent)
+            }
             if let address = s.address, !address.isEmpty, address != "Demo data" {
                 Label(address, systemImage: "mappin.and.ellipse")
             }
@@ -97,9 +107,7 @@ extension SiteDetailView {
             Label("One game, then rotate when people are waiting", systemImage: "arrow.triangle.2.circlepath")
         }
         .font(.subheadline)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 14))
+        .card()
     }
 }
 
@@ -125,8 +133,7 @@ struct WaitSummary: View {
                 stat(title: nextFreeTitle, value: trustworthy ? nextFree : "—")
             }
         }
-        .padding()
-        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 16))
+        .card()
         .accessibilityElement(children: .combine)
     }
 

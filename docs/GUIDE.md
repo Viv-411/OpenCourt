@@ -243,9 +243,15 @@ organizers how to get one. If the district ever runs reservations, the app can l
 Who signed up for an event is visible only to that player and the organizer; everyone else
 sees a count. Nothing in the community features comes from the camera.
 
+**Closest courts first.** Tap "Use" on the card at the top of the Courts tab and the app
+asks for location, then sorts the parks by distance and shows how far each one is ("0.3 mi").
+The map centres on you with every park in view. The position never leaves the phone: it isn't
+sent to the backend or attached to anything you post, and the "How it works & privacy" screen
+says so.
+
 Launch arguments for testing (Xcode → Scheme → Arguments): `-demo`, `-skipWelcome`,
-`-signedIn` (demo only), `-tab courts|events|you`, `-openSite <id>`, `-openEvent <n>`,
-`-newEvent`, `-demoMinutes <n>`.
+`-signedIn` (demo only), `-tab courts|events|you`, `-view list|map`, `-openSite <id>`,
+`-openEvent <n>`, `-newEvent`, `-demoMinutes <n>`.
 
 ```bash
 cd ios/OpenCourtKit && swift test   # 30 tests: decoding, staleness, wording, clocks, events, sign-in

@@ -2,6 +2,7 @@ import OpenCourtKit
 import SwiftUI
 
 enum Theme {
+    static let cardRadius: CGFloat = 16
     static let accent = Color(red: 0.13, green: 0.49, blue: 0.40)  // court green
     static let amber = Color(red: 0.96, green: 0.62, blue: 0.04)
     static let open = Color(red: 0.15, green: 0.62, blue: 0.35)
@@ -37,6 +38,16 @@ enum Theme {
         case .league: court
         case .social: Color(red: 0.80, green: 0.32, blue: 0.50)
         }
+    }
+}
+
+extension View {
+    /// The app's standard card: one fill, one corner radius, everywhere.
+    func card(_ padding: CGFloat = 16) -> some View {
+        self.padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.background.secondary,
+                        in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
     }
 }
 

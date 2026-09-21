@@ -147,7 +147,7 @@ struct EventRow: View {
                 Text("\(event.startsAt.eventTime) · \(event.place)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
                 HStack(spacing: 6) {
                     if event.isCancelled {
                         badge("Cancelled", .red)

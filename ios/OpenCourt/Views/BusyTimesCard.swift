@@ -59,7 +59,8 @@ struct BusyTimesCard: View {
             }
         }
         .padding()
-        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 14))
+        .background(.background.secondary,
+                    in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
         .task(id: site.id) {
             weekday = BusyTimes.isoWeekday(Date(), in: tz)
             rows = await events.busyHours(siteID: site.id)

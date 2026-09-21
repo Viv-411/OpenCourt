@@ -5,6 +5,7 @@ struct EventDetailView: View {
     @Environment(EventsStore.self) private var events
     @Environment(SessionStore.self) private var session
     @Environment(SiteStore.self) private var sites
+    @Environment(LocationStore.self) private var location
     @Environment(\.openURL) private var openURL
     let eventID: UUID
     @State private var showingSignIn = false
@@ -36,7 +37,7 @@ struct EventDetailView: View {
                 VStack(spacing: 0) {
                     info("calendar", "When", when(e))
                     Divider().padding(.leading, 44)
-                    info("mappin.and.ellipse", "Where", e.place, action: directions(e))
+                    info("mappin.and.ellipse", "Where", placeLine(e), action: directions(e))
                     Divider().padding(.leading, 44)
                     info("person.2.fill", "Format", "\(e.format.title) · \(e.skillText)")
                     Divider().padding(.leading, 44)
@@ -50,7 +51,8 @@ struct EventDetailView: View {
                             ? "Reserved by the organizer with a park district permit"
                             : "Public courts, first come first served. Normal rotation applies.")
                 }
-                .background(.background.secondary, in: RoundedRectangle(cornerRadius: 14))
+                .background(.background.secondary,
+                            in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
 
                 if !e.description.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
@@ -110,6 +112,13 @@ struct EventDetailView: View {
         var s = "\(e.startsAt.eventDay), \(e.startsAt.eventTime)"
         if let end = e.endsAt { s += " – \(end.eventTime)" }
         return s
+    }
+
+    /// "Mike Rylko Community Park · 0.5 mi away" once we know where the phone is.
+    private func placeLine(_ e: CourtEvent) -> String {
+        guard let site = sites.sites.first(where: { $0.id == e.siteID }),
+              let distance = site.distanceText(from: location.coordinate) else { return e.place }
+        return "\(e.place) · \(distance) away"
     }
 
     private func directions(_ e: CourtEvent) -> (() -> Void)? {
