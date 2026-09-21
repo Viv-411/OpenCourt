@@ -20,6 +20,9 @@ struct AboutView: View {
                           + "on a different day.", systemImage: "person.crop.circle.badge.xmark")
                     Label("Only counts and court states leave the device.",
                           systemImage: "number")
+                    Label("Your phone's location, if you share it, is used on the phone to "
+                          + "sort parks by distance. It is never sent anywhere.",
+                          systemImage: "location.slash")
                 }
                 Section("Estimates") {
                     Text("Wait times are rough guesses from how long current games have run. "
