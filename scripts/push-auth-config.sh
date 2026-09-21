@@ -17,6 +17,7 @@
 #   export GOOGLE_CLIENT_ID='...apps.googleusercontent.com' GOOGLE_SECRET='GOCSPX-...'
 #
 # Run `unset SMTP_PASS GOOGLE_SECRET SUPABASE_ACCESS_TOKEN` when you're done.
+# Set DRY_RUN=1 to see what would be sent without sending it.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -24,7 +25,7 @@ project="${SUPABASE_PROJECT_REF:-inkvqajxepcaqjubhfye}"
 site="${SITE_URL:-https://viv-411.github.io/OpenCourt/}"
 python="${PYTHON:-python3}"
 
-: "${SUPABASE_ACCESS_TOKEN:?set SUPABASE_ACCESS_TOKEN (dashboard → account → access tokens)}"
+: "${SUPABASE_ACCESS_TOKEN:?set SUPABASE_ACCESS_TOKEN (dashboard -> account -> access tokens)}"
 : "${SMTP_HOST:?set SMTP_HOST}"
 : "${SMTP_USER:?set SMTP_USER}"
 : "${SMTP_PASS:?set SMTP_PASS}"
@@ -72,7 +73,23 @@ if os.environ.get("GOOGLE_CLIENT_ID"):
 json.dump(config, sys.stdout)
 PY
 
-echo "Pushing auth config to project $project…"
+# Keep this file plain ASCII: macOS ships bash 3.2, which folds a stray multi-byte
+# character after "$project" into the variable name.
+echo "Pushing auth config to project ${project}..."
+
+if [ -n "${DRY_RUN:-}" ]; then
+    echo "DRY_RUN set: not sending. Settings that would be pushed:"
+    BODY="$body" "$python" -c 'import json,os,sys
+c = json.load(open(os.environ["BODY"]))
+for k in sorted(c):
+    v = c[k]
+    if k in ("smtp_pass", "external_google_secret"):
+        v = "(hidden, %d characters)" % len(v)
+    elif k.startswith("mailer_templates_"):
+        v = "(%d characters of HTML)" % len(v)
+    print("  %s: %s" % (k, v))'
+    exit 0
+fi
 out="$(curl -fsS -X PATCH "https://api.supabase.com/v1/projects/$project/config/auth" \
     -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
