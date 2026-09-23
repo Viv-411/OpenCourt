@@ -90,7 +90,7 @@ cd backend && uv run pytest                        # SQL tests, no Docker needed
 
 cd ios/OpenCourtKit && swift test                  # Swift Testing
 cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build
+  -destination 'platform=iOS Simulator,name=iPhone 17' build
 # app launch args: -demo, -skipWelcome, -signedIn (demo), -tab courts|events|you,
 #   -view list|map, -openSite <id>, -openEvent <n>, -newEvent, -demoMinutes <n>
 ```
@@ -123,8 +123,11 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
 
 ## This machine (as of 2026-09-16)
 
-- The Xcode license is accepted; `git`, `xcodebuild`, and the iOS Simulator work (iPhone 16
-  Pro simulator available).
+- The Xcode license is accepted; `git`, `xcodebuild`, and the iOS Simulator work. Xcode 27
+  with the **iOS 27.0** runtime; the only simulator device is **iPhone 17** (2026-09-23).
+- **The disk is nearly full** (~10 GB free of 228 GB). Before anything large, check
+  `df -h /System/Volumes/Data`: a simulator runtime needs ~20 GB, and below ~2 GB the
+  simulator hangs with blank screens and `fence tx observer timed out`.
 - `~/.local` is owned by root, so uv and its Python live in `~/.uv`. `source scripts/env.sh`
   puts them on `PATH`.
 - The Python sandbox blocks `multiprocessing` pools. For parallel simulator runs, use
