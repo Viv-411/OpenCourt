@@ -1,3 +1,4 @@
+import MapKit
 import OpenCourtKit
 import SwiftUI
 
@@ -73,10 +74,13 @@ extension Date {
     var eventTime: String { formatted(.dateTime.hour().minute()) }
 }
 
-/// Opens Apple Maps with walking/driving directions to a coordinate.
-func directionsURL(latitude: Double, longitude: Double, name: String) -> URL? {
-    var c = URLComponents(string: "https://maps.apple.com/")
-    c?.queryItems = [URLQueryItem(name: "daddr", value: "\(latitude),\(longitude)"),
-                     URLQueryItem(name: "q", value: name)]
-    return c?.url
+/// Opens Apple Maps with driving directions to a park, labelled with its name.
+@MainActor
+func openDirections(latitude: Double, longitude: Double, name: String) {
+    let place = MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: latitude,
+                                                               longitude: longitude))
+    let destination = MKMapItem(placemark: place)
+    destination.name = name
+    destination.openInMaps(
+        launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
 }

@@ -60,9 +60,10 @@ struct SiteDetailView: View {
                 }
                 .tint(Theme.amber)
                 .sensoryFeedback(.selection, trigger: favorites.ids)
-                if let lat = site.latitude, let lon = site.longitude,
-                   let url = directionsURL(latitude: lat, longitude: lon, name: site.name) {
-                    Button("Directions", systemImage: "car.fill") { openURL(url) }
+                if let lat = site.latitude, let lon = site.longitude {
+                    Button("Directions", systemImage: "car.fill") {
+                        openDirections(latitude: lat, longitude: lon, name: site.name)
+                    }
                 }
             }
         }
