@@ -123,9 +123,8 @@ struct EventDetailView: View {
 
     private func directions(_ e: CourtEvent) -> (() -> Void)? {
         guard let site = sites.sites.first(where: { $0.id == e.siteID }),
-              let lat = site.latitude, let lon = site.longitude,
-              let url = directionsURL(latitude: lat, longitude: lon, name: site.name) else { return nil }
-        return { openURL(url) }
+              let lat = site.latitude, let lon = site.longitude else { return nil }
+        return { openDirections(latitude: lat, longitude: lon, name: site.name) }
     }
 
     private func info(_ symbol: String, _ title: String, _ value: String,

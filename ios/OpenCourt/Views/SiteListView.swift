@@ -126,18 +126,28 @@ struct SiteListView: View {
                 }
             }
         }
-        .mapControls {
-            MapUserLocationButton()
-            MapCompass()
+        .mapControls { MapCompass() }
+        .overlay(alignment: .topTrailing) {
+            LocateButton { coordinate in
+                withAnimation(.snappy) {
+                    camera = .region(MKCoordinateRegion(
+                        center: CLLocationCoordinate2D(latitude: coordinate.latitude,
+                                                       longitude: coordinate.longitude),
+                        span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)))
+                }
+            }
+            .padding(12)
         }
         .onAppear { camera = fitted }
         .onChange(of: store.sites) { camera = fitted }
         .onChange(of: location.coordinate) { camera = fitted }
         .safeAreaInset(edge: .bottom) {
-            if location.canAsk {
-                Button("Show my location") { location.request() }
-                    .buttonStyle(.borderedProminent)
-                    .padding()
+            if location.failed {
+                Text("Couldn't find your location.")
+                    .font(.footnote)
+                    .padding(8)
+                    .background(.thinMaterial, in: Capsule())
+                    .padding(.bottom, 8)
             }
         }
     }
@@ -183,11 +193,8 @@ private struct LocationPrompt: View {
         HStack(spacing: 12) {
             IconTile(symbol: "location.fill", color: Theme.accent)
             VStack(alignment: .leading, spacing: 3) {
-                Text(location.isDenied ? "Location is off" : "Find the closest courts")
-                    .font(.subheadline.weight(.semibold))
-                Text(location.isDenied
-                     ? "Turn it on in Settings to sort parks by distance."
-                     : "Sort parks by distance. Your location stays on your phone.")
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -201,12 +208,60 @@ private struct LocationPrompt: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             } else {
-                Button("Use") { location.request() }
+                Button(location.failed ? "Retry" : "Use") { location.request() }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private var title: String {
+        if location.isDenied { return "Location is off" }
+        return location.failed ? "No location yet" : "Find the closest courts"
+    }
+
+    private var detail: String {
+        if location.isDenied { return "Turn it on in Settings to sort parks by distance." }
+        if location.failed {
+            return "Your phone hasn't got a position yet. Try again, or move somewhere "
+                + "with a clearer view of the sky."
+        }
+        return "Sort parks by distance. Your location stays on your phone."
+    }
+}
+
+/// Centres the map on the phone, asking for location the first time. Unlike MapKit's own
+/// button, this one stops spinning when there's no position to be had.
+private struct LocateButton: View {
+    @Environment(LocationStore.self) private var location
+    let centre: (Coordinate) -> Void
+
+    var body: some View {
+        Button {
+            if let coordinate = location.coordinate {
+                centre(coordinate)
+            } else {
+                location.request()
+            }
+        } label: {
+            Group {
+                if location.isLocating {
+                    ProgressView()
+                } else {
+                    Image(systemName: location.failed ? "location.slash" : "location.fill")
+                        .font(.system(size: 17, weight: .medium))
+                }
+            }
+            .frame(width: 44, height: 44)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
+        }
+        .tint(Theme.accent)
+        .accessibilityLabel(location.coordinate == nil ? "Find my location" : "Centre on me")
+        .onChange(of: location.coordinate) { _, coordinate in
+            if let coordinate { centre(coordinate) }
+        }
     }
 }
 
