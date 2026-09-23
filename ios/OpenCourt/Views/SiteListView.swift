@@ -235,6 +235,9 @@ private struct LocationPrompt: View {
 /// button, this one stops spinning when there's no position to be had.
 private struct LocateButton: View {
     @Environment(LocationStore.self) private var location
+    /// Only true between a tap and the fix that answers it, so a position arriving on its
+    /// own doesn't yank the map off the view that frames every park.
+    @State private var awaitingFix = false
     let centre: (Coordinate) -> Void
 
     var body: some View {
@@ -242,6 +245,7 @@ private struct LocateButton: View {
             if let coordinate = location.coordinate {
                 centre(coordinate)
             } else {
+                awaitingFix = true
                 location.request()
             }
         } label: {
@@ -260,7 +264,12 @@ private struct LocateButton: View {
         .tint(Theme.accent)
         .accessibilityLabel(location.coordinate == nil ? "Find my location" : "Centre on me")
         .onChange(of: location.coordinate) { _, coordinate in
-            if let coordinate { centre(coordinate) }
+            guard awaitingFix, let coordinate else { return }
+            awaitingFix = false
+            centre(coordinate)
+        }
+        .onChange(of: location.failed) { _, failed in
+            if failed { awaitingFix = false }
         }
     }
 }
