@@ -155,7 +155,14 @@ struct SiteListView: View {
     /// Every park plus the phone's own dot, with room around the edges so no pin or label
     /// ends up half off the screen (`.automatic` frames them flush).
     private var fitted: MapCameraPosition {
-        let points = store.sites.compactMap(\.coordinate) + [location.coordinate].compactMap { $0 }
+        var points = store.sites.compactMap(\.coordinate)
+        if let me = location.coordinate {
+            // Stay local: a park an hour away (the simulator's row sits in Chicago) shouldn't
+            // zoom the map out across the state.
+            let nearby = store.sites.filter { ($0.meters(from: me) ?? .infinity) < 80_000 }
+                .compactMap(\.coordinate)
+            points = (nearby.isEmpty ? points : nearby) + [me]
+        }
         guard !points.isEmpty else { return .automatic }
         let latitudes = points.map(\.latitude), longitudes = points.map(\.longitude)
         guard let minLat = latitudes.min(), let maxLat = latitudes.max(),
@@ -281,13 +288,19 @@ private struct MapPin: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            Text(label)
-                .font(.caption.bold())
-                .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
-                .background(color.gradient, in: Circle())
-                .overlay(Circle().strokeBorder(.white, lineWidth: 2))
-                .shadow(radius: 3, y: 1)
+            Group {
+                if live {
+                    Text("\(site.peopleWaiting)").font(.caption.bold())
+                } else {
+                    // Same icon the list row uses for a park with nothing to report.
+                    Image(systemName: "wifi.slash").font(.caption2.weight(.bold))
+                }
+            }
+            .foregroundStyle(.white)
+            .frame(width: 34, height: 34)
+            .background(color.gradient, in: Circle())
+            .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+            .shadow(radius: 3, y: 1)
             Text(site.name)
                 .font(.caption2.weight(.medium))
                 .padding(.horizontal, 5)
@@ -297,10 +310,6 @@ private struct MapPin: View {
     }
 
     private var live: Bool { site.freshness(at: now) == .live }
-    private var label: String {
-        guard live else { return "?" }
-        return site.peopleWaiting == 0 ? "0" : "\(site.peopleWaiting)"
-    }
     private var color: Color {
         guard live else { return .secondary }
         return site.peopleWaiting == 0 ? Theme.open : Theme.amber

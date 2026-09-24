@@ -181,7 +181,7 @@ class HistoryConfig(_Model):
 
 
 class Config(_Model):
-    site_id: str = "demo-site"
+    site_id: str = "sim-site"
     zones_file: str = "config/zones.yaml"
     zones: Zones | None = None  # inline zones (tests/sim) take precedence over zones_file
 
