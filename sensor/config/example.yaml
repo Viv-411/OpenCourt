@@ -2,7 +2,7 @@
 # Every key is optional; omitted keys use the defaults shown here.
 # Durations are in seconds. See docs/PLAN.md §5-§7 for what each rule means.
 
-site_id: demo-site            # must match a row in the backend `sites` table
+site_id: sim-site             # must match a row in the backend `sites` table
 zones_file: config/zones.yaml # written by `opencourt calibrate` (relative to sensor/)
 
 smoothing:

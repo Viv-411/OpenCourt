@@ -1,6 +1,7 @@
 -- Sites for the simulator (`opencourt simulate --publish`) and the real pilot parks.
 insert into public.sites (id, name, address, latitude, longitude, timezone) values
-    ('sim-site',  'Simulator',              null,              41.8800, -87.6300, 'America/Chicago'),
+    -- Beside the pilot parks, so the app's map frames them together.
+    ('sim-site',  'Simulator',              null,              42.1520, -87.9600, 'America/Chicago'),
     -- The real pilot sites (Buffalo Grove Park District). Coordinates are the park entrances;
     -- refine to the courts after the site visit.
     ('rick-drazner', 'Rick Drazner Park',          '401 Aptakisic Rd, Buffalo Grove, IL',      42.1590, -87.9590, 'America/Chicago'),
