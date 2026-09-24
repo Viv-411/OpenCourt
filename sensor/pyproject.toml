@@ -16,6 +16,7 @@ vision = [
     "ultralytics>=8.3",
     "opencv-python>=4.9",
     "lap>=0.5",
+    "ncnn>=1.0.20240410",  # runs the exported model; several times faster than PyTorch on a Pi
 ]
 # Raspberry Pi only
 pi = [
@@ -30,6 +31,7 @@ opencourt = "opencourt.cli:main"
 dev = [
     "pytest>=8",
     "ruff>=0.6",
+    "pnnx>=20240410",  # converts YOLO to NCNN (`opencourt export-model`); the Pi only runs the result
 ]
 
 [build-system]

@@ -174,6 +174,32 @@ uv run opencourt evaluate --labels labels/clip.yaml --events data/clip.events.js
 The detector has already been checked on a sample image: it found 4 people with stable
 IDs, at about 25 FPS on this Mac.
 
+### Will a Raspberry Pi keep up?
+
+The bar (PLAN §8) is **8 frames per second** from the detector and tracker; below that,
+ByteTrack loses players who move fast. `scripts/pi-bench.sh` tests a board against it on 3
+minutes of the Rick Drazner clip (1:00–4:00) and checks it reaches the Mac's answers.
+
+The bundle lives in `sensor/data/pi-bench/` (150 MB, git-ignored because it shows real
+people): the clip at 10 fps and full size, YOLO exported to NCNN at 640 and 480, the zones
+and config, and the Mac's reference results. To rebuild it, see the tools in
+`sensor/tools/README.md`. On the Pi (64-bit Raspberry Pi OS):
+
+```bash
+git clone https://github.com/Viv-411/OpenCourt.git && cd OpenCourt
+# copy sensor/data/pi-bench/ from the Mac into the same place, then:
+scripts/pi-bench.sh              # installs what it needs, runs 640 then 480
+```
+
+It prints the board, the detector's frame rate per minute (to show slowing as it heats
+up), temperature and throttling, and a verdict: **keeps up** (8+), **borderline**, or **too
+slow**. It also replays the Mac's detections to prove the engine agrees exactly, and
+compares the Pi's own detections with the Mac's. On the Mac (M-series CPU, NCNN) the
+detector runs at 33 frames/s at 640 and 50 at 480, and repeated runs are byte-identical.
+
+Dropping to 480 is faster but costs a lot on this footage: it finds 1.7 people per frame
+against 3.0 at 640, because distant players shrink below what it can see.
+
 ---
 
 ## 2. Backend (`backend/`): the mailbox
