@@ -17,3 +17,8 @@ These tools *do* write images and video, so the rules for them are:
 | `footage_background.py` | An empty-court still (median of many frames: moving people vanish) |
 | `footage_heatmap.py` | Where people's feet were over the whole clip, over that still |
 | `render_annotated.py` | A copy of the clip with zones, feet, counts, court states and clocks drawn on |
+| `make_pi_clip.py` | A short benchmark clip for a Pi: same frame size, 10 fps, easy-to-decode MPEG-4 |
+| `pi_bench.py` | Times the detector on that clip and logs temperature and throttling (boxes only) |
+| `compare_runs.py` | Whether two machines' runs agree: detections and engine events (reads only) |
+
+`scripts/pi-bench.sh` runs the last two on a Pi and compares against the Mac's reference.
