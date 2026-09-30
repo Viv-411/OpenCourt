@@ -28,10 +28,14 @@ ram_text=""
 [ "$ram_mb" -gt 0 ] && ram_text=" | ${ram_mb} MB RAM"
 echo "board: $board | $arch$ram_text | ${disk_gb} GB free"
 
-# 64-bit ARM (a Pi, or a Mac as "arm64") and x86_64 (a mini PC) can all run it.
-if [ "$arch" != "aarch64" ] && [ "$arch" != "arm64" ] && [ "$arch" != "x86_64" ]; then
+# 64-bit ARM (a Pi, or a Mac as "arm64") and x86_64 (a mini PC) can all run it. Check the
+# programs, not just the kernel: 32-bit Raspberry Pi OS on a Pi 4 boots a 64-bit kernel, so
+# `uname -m` says aarch64 while every library underneath is still 32-bit.
+bits="$(getconf LONG_BIT 2>/dev/null || echo 64)"
+if [ "$bits" != "64" ] || { [ "$arch" != "aarch64" ] && [ "$arch" != "arm64" ] \
+        && [ "$arch" != "x86_64" ]; }; then
     echo
-    echo "This OS is 32-bit ($arch). The detector's libraries only exist for 64-bit systems."
+    echo "This OS is 32-bit. The detector's libraries only exist for 64-bit systems."
     echo "Reflash with Raspberry Pi OS (64-bit) using Raspberry Pi Imager, then run this again."
     echo "(A Pi 1, Pi Zero or original Pi 2 can't run 64-bit at all.)"
     exit 1
