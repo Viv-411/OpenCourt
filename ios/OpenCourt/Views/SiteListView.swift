@@ -281,41 +281,49 @@ private struct LocateButton: View {
     }
 }
 
-/// A map marker: how many are waiting, coloured by whether a court is free.
+/// A map marker in the style of a price tag: the wait on a capsule, so the map answers
+/// the same question as the list. Green for no wait, grey for a park with nothing to report.
 private struct MapPin: View {
     let site: Site
     let now: Date
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 3) {
             Group {
-                if live {
-                    Text("\(site.peopleWaiting)").font(.caption.bold())
-                } else {
-                    // Same icon the list row uses for a park with nothing to report.
-                    Image(systemName: "wifi.slash").font(.caption2.weight(.bold))
+                switch wait.tone {
+                case .waiting: Text("\(wait.value) min")
+                case .open: Text("No wait")
+                case .unknown: Image(systemName: "wifi.slash")
                 }
             }
-            .foregroundStyle(.white)
-            .frame(width: 34, height: 34)
-            .background(color.gradient, in: Circle())
-            .overlay(Circle().strokeBorder(.white, lineWidth: 2))
-            .shadow(radius: 3, y: 1)
+            .font(.subheadline.weight(.bold))
+            .monospacedDigit()
+            .foregroundStyle(wait.tone == .waiting ? Color.primary : Color.white)
+            .padding(.horizontal, 10)
+            .frame(minWidth: 36, minHeight: 30)
+            .background(background, in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+            .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
             Text(site.name)
-                .font(.caption2.weight(.medium))
-                .padding(.horizontal, 5)
-                .padding(.vertical, 1)
+                .font(.caption2.weight(.semibold))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
                 .background(.thinMaterial, in: Capsule())
         }
     }
 
-    private var live: Bool { site.freshness(at: now) == .live }
-    private var color: Color {
-        guard live else { return .secondary }
-        return site.peopleWaiting == 0 ? Theme.open : Theme.amber
+    private var wait: WaitDisplay { site.waitDisplay(at: now) }
+    private var background: Color {
+        switch wait.tone {
+        case .open: Theme.open
+        case .waiting: Color(.systemBackground)
+        case .unknown: Color(.systemGray)
+        }
     }
 }
 
+/// One park in the list, laid out like a weather app's list of cities: the number you
+/// decide by (the wait) is big on the right; the rest is quiet text on the left.
 struct SiteRow: View {
     let site: Site
     let now: Date
@@ -323,47 +331,45 @@ struct SiteRow: View {
     var distance: String?
 
     var body: some View {
-        HStack(spacing: 12) {
-            IconTile(symbol: icon, color: color, size: 40)
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 4) {
-                    Text(site.name).font(.headline)
-                    if starred {
-                        Image(systemName: "star.fill")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.amber)
-                            .accessibilityLabel("Starred")
-                    }
-                }
-                Text(site.headline(at: now))
-                    .font(.subheadline)
-                    .foregroundStyle(open ? Theme.open : .secondary)
-                HStack(spacing: 6) {
-                    Text("\(site.courtCount) courts")
-                    if let distance {
-                        Text("·")
-                        Label(distance, systemImage: "location.fill")
-                            .labelStyle(.titleAndIcon)
-                            .imageScale(.small)
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                // One run of text, so the star stays at the end of the name when it wraps.
+                (Text(site.name) + (starred
+                    ? Text("  ") + Text(Image(systemName: "star.fill"))
+                        .font(.caption).foregroundStyle(Theme.amber)
+                    : Text("")))
+                    .font(.headline)
+                    .lineLimit(2)
+                Text(site.statusLine(at: now))
+                    .font(.subheadline.weight(courtOpen ? .semibold : .regular))
+                    .foregroundStyle(courtOpen ? Theme.open : .secondary)
+                Text(facts)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
+            let wait = site.waitDisplay(at: now)
+            if wait.tone == .unknown {
+                // The status line already says why; the map pin uses the same icon.
+                Image(systemName: "wifi.slash")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityLabel(wait.spoken)
+            } else {
+                BigWait(wait: wait)
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
     }
 
-    private var live: Bool { site.freshness(at: now) == .live }
-    private var open: Bool { live && site.peopleWaiting == 0 }
-    private var icon: String {
-        guard live else { return "wifi.slash" }
-        return open ? "checkmark" : "person.3.fill"
+    /// Distance first: the list is sorted by it.
+    private var facts: String {
+        let courts = site.courtCount == 1 ? "1 court" : "\(site.courtCount) courts"
+        return [distance, courts].compactMap { $0 }.joined(separator: " · ")
     }
-    private var color: Color {
-        guard live else { return .secondary }
-        return open ? Theme.open : Theme.accent
+
+    private var courtOpen: Bool {
+        site.freshness(at: now) == .live && site.peopleWaiting == 0 && site.nextFreeSeconds == 0
     }
 }

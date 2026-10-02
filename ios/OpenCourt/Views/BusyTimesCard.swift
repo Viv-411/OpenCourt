@@ -21,14 +21,23 @@ struct BusyTimesCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Busy times").font(.headline)
-                Spacer()
+            SectionHeader("Busy times") {
                 Picker("Day", selection: $weekday) {
                     ForEach(1...7, id: \.self) { Text(dayNames[$0 - 1]).tag($0) }
                 }
                 .pickerStyle(.menu)
             }
+            chart
+        }
+        .task(id: site.id) {
+            weekday = BusyTimes.isoWeekday(Date(), in: tz)
+            rows = await events.busyHours(siteID: site.id)
+            loaded = true
+        }
+    }
+
+    private var chart: some View {
+        VStack(alignment: .leading, spacing: 10) {
             if day.isEmpty {
                 Text(loaded ? "Not enough history yet. This fills in as the sensor runs."
                             : "Loading…")
@@ -58,14 +67,7 @@ struct BusyTimesCard: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding()
-        .background(.background.secondary,
-                    in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
-        .task(id: site.id) {
-            weekday = BusyTimes.isoWeekday(Date(), in: tz)
-            rows = await events.busyHours(siteID: site.id)
-            loaded = true
-        }
+        .card()
     }
 
     private func isNow(_ row: BusyHour) -> Bool {

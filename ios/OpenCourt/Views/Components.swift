@@ -96,3 +96,66 @@ struct DemoBadge: View {
             .accessibilityLabel("Showing demo data")
     }
 }
+
+/// The wait as a big number over its unit ("10" over "min wait"), the most important
+/// thing on the Courts list and a park's page. Scales with the reader's text size.
+struct BigWait: View {
+    let wait: WaitDisplay
+    var size: CGFloat = 40
+    var alignment: HorizontalAlignment = .trailing
+    @ScaledMetric(relativeTo: .largeTitle) private var scale: CGFloat = 1
+
+    var body: some View {
+        VStack(alignment: alignment, spacing: 0) {
+            Text(wait.value)
+                .font(.system(size: size * scale, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .foregroundStyle(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(wait.unit)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .animation(.snappy, value: wait)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(wait.spoken)
+    }
+
+    private var color: Color {
+        switch wait.tone {
+        case .open: Theme.open
+        case .waiting: .primary
+        case .unknown: .secondary
+        }
+    }
+}
+
+/// A section title on a long page, with optional trailing detail ("3 in play · 1 open")
+/// or a control (the day picker on Busy times).
+struct SectionHeader<Trailing: View>: View {
+    let title: String
+    let trailing: Trailing
+
+    init(_ title: String, @ViewBuilder trailing: () -> Trailing) {
+        self.title = title
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.title3.weight(.bold))
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            trailing
+        }
+    }
+}
+
+extension SectionHeader where Trailing == EmptyView {
+    init(_ title: String) {
+        self.init(title) { EmptyView() }
+    }
+}

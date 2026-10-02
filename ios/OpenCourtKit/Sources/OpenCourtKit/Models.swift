@@ -23,6 +23,19 @@ public enum CourtState: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// One or two words for a court tile. "Line waiting" is said once, at the top of the
+    /// page, instead of on every court.
+    public var shortTitle: String {
+        switch self {
+        case .unknown: "Checking"
+        case .empty: "Open"
+        case .rotating: "Changing"
+        case .idle, .active: "In play"
+        case .warning: "Almost time"
+        case .due: "Time up"
+        }
+    }
+
     public var isAvailable: Bool { self == .empty }
     public var hasClock: Bool { self == .active || self == .warning || self == .due }
 }
