@@ -1,13 +1,14 @@
 import OpenCourtKit
 import SwiftUI
 
+/// A park's page, in the order someone at the gate needs it: how long the wait is, which
+/// courts are in play, when it's usually busy, what's coming up, then the park itself.
 struct SiteDetailView: View {
     @Environment(SiteStore.self) private var store
     @Environment(EventsStore.self) private var events
     @Environment(FavoritesStore.self) private var favorites
     @Environment(LocationStore.self) private var location
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.openURL) private var openURL
     let site: Site
 
     private var snapshot: SiteSnapshot? {
@@ -16,26 +17,15 @@ struct SiteDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 28) {
                 if let snapshot {
                     let freshness = snapshot.freshness(at: store.now)
-                    HStack {
+                    if !freshness.isTrustworthy {
                         FreshnessBanner(freshness: freshness, updatedAt: snapshot.site.updatedAt,
                                         now: store.now)
-                        if store.isDemo {
-                            Spacer(minLength: 8)
-                            DemoBadge()
-                        }
                     }
-                    WaitSummary(site: snapshot.site, trustworthy: freshness.isTrustworthy)
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)],
-                              spacing: 12) {
-                        ForEach(snapshot.courts) { court in
-                            CourtCard(court: court, now: store.now,
-                                      dimmed: !freshness.isTrustworthy)
-                        }
-                    }
-                    Legend()
+                    WaitHero(site: snapshot.site, now: store.now, isDemo: store.isDemo)
+                    courts(snapshot, trustworthy: freshness.isTrustworthy)
                     BusyTimesCard(site: snapshot.site)
                     upcoming
                     parkInfo(snapshot.site)
@@ -77,15 +67,40 @@ struct SiteDetailView: View {
 }
 
 extension SiteDetailView {
+    func courts(_ snapshot: SiteSnapshot, trustworthy: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SectionHeader("Courts") {
+                if trustworthy {
+                    Text(snapshot.courtSummary).font(.subheadline).foregroundStyle(.secondary)
+                }
+            }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 10)], spacing: 10) {
+                ForEach(snapshot.courts) { court in
+                    CourtCard(court: court, now: store.now, dimmed: !trustworthy)
+                }
+            }
+            // Explain amber where it's seen, and only then; it's always under "About" too.
+            if trustworthy, snapshot.courts.contains(where: { $0.light != .off }) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    LightIndicator(mode: .solid)
+                    Text("Amber means a group's time is up: 20 minutes on court while others "
+                         + "are waiting.")
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     @ViewBuilder var upcoming: some View {
         let here = events.events(at: site.id).prefix(3)
         if !here.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Coming up here").font(.headline)
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader("Coming up here")
                 ForEach(Array(here)) { e in
                     NavigationLink(value: e) {
                         EventRow(event: e, going: events.going.contains(e.id))
-                            .card(10)
+                            .card(12)
                     }
                     .buttonStyle(.plain)
                 }
@@ -94,88 +109,108 @@ extension SiteDetailView {
     }
 
     func parkInfo(_ s: Site) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("About this park").font(.headline)
-            if let distance = s.distanceText(from: location.coordinate) {
-                Label("\(distance) away", systemImage: "location.fill")
-                    .foregroundStyle(Theme.accent)
+        VStack(alignment: .leading, spacing: 10) {
+            SectionHeader("About this park")
+            VStack(alignment: .leading, spacing: 12) {
+                if let distance = s.distanceText(from: location.coordinate) {
+                    Label("\(distance) away", systemImage: "location.fill")
+                }
+                if let address = s.address, !address.isEmpty, address != "Demo data" {
+                    Label(address, systemImage: "mappin.and.ellipse")
+                }
+                Label("\(s.courtCount) outdoor courts", systemImage: "sportscourt")
+                Label("Free to play, first come first served", systemImage: "person.2.wave.2")
+                Label("One game, then rotate when people are waiting",
+                      systemImage: "arrow.triangle.2.circlepath")
+                Divider()
+                Label("Amber light: a group's time is up, after 20 minutes on court while "
+                      + "others wait", systemImage: "light.beacon.max")
+                Label("Estimates only. The camera doesn't record or identify anyone.",
+                      systemImage: "video.slash")
+                    .foregroundStyle(.secondary)
             }
-            if let address = s.address, !address.isEmpty, address != "Demo data" {
-                Label(address, systemImage: "mappin.and.ellipse")
-            }
-            Label("\(s.courtCount) outdoor courts", systemImage: "sportscourt")
-            Label("Free to play, first come first served", systemImage: "person.2.wave.2")
-            Label("One game, then rotate when people are waiting", systemImage: "arrow.triangle.2.circlepath")
+            .font(.subheadline)
+            .card()
         }
-        .font(.subheadline)
-        .card()
     }
 }
 
-struct WaitSummary: View {
+/// The answer to "how long would I wait?", as big as the screen allows, with plain
+/// sentences under it for who's ahead and when a court frees up.
+struct WaitHero: View {
     let site: Site
-    let trustworthy: Bool
+    let now: Date
+    var isDemo = false
+    @ScaledMetric(relativeTo: .largeTitle) private var scale: CGFloat = 1
 
     var body: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                stat(title: "Wait if you arrive now",
-                     value: trustworthy ? WaitFormat.wait(site.waitSeconds).capitalizedFirst : "—",
-                     big: true)
-                if trustworthy, let ahead = site.groupsAhead, ahead > 0 {
-                    Text(ahead == 1 ? "1 group ahead of you" : "\(ahead) groups ahead of you")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+        let wait = site.waitDisplay(at: now)
+        let details = site.waitDetails(at: now)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Wait if you arrive now")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+            number(wait)
+            if let first = details.first {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(first).foregroundStyle(.primary)
+                    ForEach(details.dropFirst(), id: \.self) { Text($0) }
                 }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 8) {
-                stat(title: "In line", value: trustworthy ? "\(site.peopleWaiting)" : "—")
-                stat(title: nextFreeTitle, value: trustworthy ? nextFree : "—")
-            }
+            footer
         }
-        .card()
+        .card(20)
         .accessibilityElement(children: .combine)
     }
 
-    /// A court that is open right now goes to whoever is already in line, so say that
-    /// instead of "free now" next to a non-zero wait.
-    private var courtOpenNow: Bool { (site.nextFreeSeconds ?? 60) < 60 }
-
-    private var nextFreeTitle: String {
-        courtOpenNow && site.peopleWaiting > 0 ? "Open court" : "Next court free"
-    }
-
-    private var nextFree: String {
-        guard let s = site.nextFreeSeconds else { return "—" }
-        if courtOpenNow { return site.peopleWaiting > 0 ? "line's turn" : "now" }
-        return "~" + WaitFormat.duration(TimeInterval(s))
-    }
-
-    private func stat(title: String, value: String, big: Bool = false) -> some View {
-        VStack(alignment: big ? .leading : .trailing, spacing: 2) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(value)
-                .font(big ? .largeTitle.weight(.semibold) : .title3.weight(.semibold))
-                .monospacedDigit()
-        }
-    }
-}
-
-struct Legend: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                LightIndicator(mode: .solid)
-                Text("Amber means a group's time is up: 20 minutes on court "
-                     + "while others are waiting.")
+    @ViewBuilder
+    private func number(_ wait: WaitDisplay) -> some View {
+        switch wait.tone {
+        case .waiting:
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(wait.value)
+                    .font(.system(size: 84 * scale, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                Text("min")
+                    .font(.system(size: 30 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
             }
-            Text("Estimates only. Counts come from a camera that doesn't record or identify "
-                 + "anyone.")
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .accessibilityLabel(wait.spoken)
+        case .open:
+            Text("No wait")
+                .font(.system(size: 60 * scale, weight: .bold, design: .rounded))
+                .foregroundStyle(Theme.open)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+        case .unknown:
+            Text(wait.unit.capitalizedFirst)
+                .font(.system(size: 40 * scale, weight: .bold, design: .rounded))
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
         }
-        .font(.footnote)
-        .padding(.top, 8)
+    }
+
+    @ViewBuilder private var footer: some View {
+        let live = site.freshness(at: now) == .live
+        if live || isDemo {
+            HStack(spacing: 6) {
+                if live, let updated = site.updatedAt {
+                    Circle().fill(Theme.open).frame(width: 7, height: 7)
+                    Text("Live · updated \(WaitFormat.age(now.timeIntervalSince(updated)))")
+                }
+                Spacer()
+                if isDemo { DemoBadge() }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.top, 6)
+        }
     }
 }
 

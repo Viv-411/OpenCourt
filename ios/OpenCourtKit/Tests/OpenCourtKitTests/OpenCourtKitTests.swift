@@ -96,6 +96,75 @@ let courtJSON = """
     }
 }
 
+/// The big number on the Courts list and a park's page, and the plain sentences around it.
+@Suite struct BigWait {
+    let now = Date(timeIntervalSince1970: 1_000_000)
+
+    func site(wait: Int? = 700, queue: Double = 5, ahead: Int? = 2, nextFree: Int? = 240,
+              age: TimeInterval? = 5, health: SensorHealth = .ok) -> Site {
+        Site(id: "s", name: "S", courtCount: 4, health: health, queueCount: queue,
+             queueWaiting: queue > 0, waitSeconds: wait, nextFreeSeconds: nextFree,
+             groupsAhead: ahead, updatedAt: age.map { now.addingTimeInterval(-$0) })
+    }
+
+    @Test func waitIsRoundedMinutes() {
+        #expect(site(wait: 700).waitDisplay(at: now)
+                == WaitDisplay(value: "10", unit: "min wait", tone: .waiting))
+        #expect(site(wait: 200).waitDisplay(at: now).value == "5")    // never "0" or "3"
+        #expect(site(wait: 4200).waitDisplay(at: now).value == "70")  // minutes, not "1:10"
+    }
+
+    @Test func noWaitSaysNow() {
+        #expect(site(wait: 30).waitDisplay(at: now)
+                == WaitDisplay(value: "Now", unit: "no wait", tone: .open))
+    }
+
+    @Test func untrustedDataShowsNoNumber() {
+        #expect(site(age: nil).waitDisplay(at: now).unit == "no data yet")
+        #expect(site(age: 600).waitDisplay(at: now).unit == "offline")
+        #expect(site(health: .warmingUp).waitDisplay(at: now).unit == "warming up")
+        #expect(site(wait: nil).waitDisplay(at: now).tone == .unknown)
+        #expect(site(age: 600).waitDisplay(at: now).value == "–")
+    }
+
+    @Test func spokenWait() {
+        #expect(site().waitDisplay(at: now).spoken == "Wait about 10 minutes")
+        #expect(site(age: 600).waitDisplay(at: now).spoken == "Wait unknown, offline")
+    }
+
+    @Test func statusLines() {
+        #expect(site().statusLine(at: now) == "5 in line")
+        #expect(site(queue: 1).statusLine(at: now) == "1 person in line")
+        #expect(site(queue: 0, nextFree: 0).statusLine(at: now) == "Court open now")
+        #expect(site(queue: 0, nextFree: 300).statusLine(at: now) == "No line")
+        #expect(site(age: 7200).statusLine(at: now) == "Offline · last update 2 hr ago")
+    }
+
+    @Test func courtSummaryCountsByState() {
+        let t = now
+        func court(_ n: Int, _ state: CourtState) -> CourtStatus {
+            CourtStatus(siteID: "s", number: n, state: state, occupancy: 4, updatedAt: t)
+        }
+        let snap = SiteSnapshot(site: site(), courts: [
+            court(1, .active), court(2, .due), court(3, .empty), court(4, .rotating),
+        ])
+        #expect(snap.courtSummary == "2 in play · 1 open · 1 changing")
+    }
+
+    @Test func detailsSaySeparateThingsPlainly() {
+        #expect(site().waitDetails(at: now) == [
+            "5 people in line · 2 groups ahead of you",
+            "Next court frees up in about 4 min",
+        ])
+        // The old "Open court: line's turn" becomes a sentence.
+        #expect(site(nextFree: 0).waitDetails(at: now).last
+                == "A court is open. The people in line go first.")
+        #expect(site(queue: 0, ahead: 0, nextFree: 0).waitDetails(at: now)
+                == ["A court is free right now."])
+        #expect(site(age: 600).waitDetails(at: now).isEmpty)
+    }
+}
+
 @Suite struct Formatting {
     @Test func waits() {
         #expect(WaitFormat.wait(nil) == "wait unknown")
@@ -120,12 +189,14 @@ let courtJSON = """
 
     @Test func stateWordingIsFactual() {
         for state in CourtState.allCases {
-            let t = state.title.lowercased()
-            for word in ["cheat", "violat", "expired", "hog", "kick"] {
-                #expect(!t.contains(word), "\(state) title '\(t)' is accusatory")
+            for t in [state.title.lowercased(), state.shortTitle.lowercased()] {
+                for word in ["cheat", "violat", "expired", "hog", "kick"] {
+                    #expect(!t.contains(word), "\(state) wording '\(t)' is accusatory")
+                }
             }
         }
         #expect(CourtState.due.title == "Time up")
+        #expect(CourtState.due.shortTitle == "Time up")
     }
 }
 
