@@ -175,6 +175,14 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
   only — never published, stored in the database, or attached to anything a person posts.
   Ask for it in context (the card in the list), never on first launch.
 
+- **Appearance** (2026-10-01): System (default) / Light / Dark on the You tab, stored under
+  `appearance`. `AppAppearance.apply()` sets the windows' `overrideUserInterfaceStyle`
+  instead of `.preferredColorScheme`, which won't return to System until relaunch. Theme
+  colours have lighter dark-mode shades (`Theme.adaptive`); check contrast in both modes.
+  To screenshot a mode, write the setting into the app's container (`defaults write
+  <container>/Library/Preferences/app.opencourt.OpenCourt appearance dark`); a `-appearance`
+  launch argument does not reach `@AppStorage` reliably.
+
 ## Open questions (see PLAN.md §13)
 
 - Light layout: one per court, or a panel at the line?
