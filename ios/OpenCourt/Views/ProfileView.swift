@@ -8,6 +8,7 @@ struct ProfileView: View {
     @Environment(SiteStore.self) private var sites
     @Environment(FavoritesStore.self) private var favorites
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    @AppStorage(AppAppearance.storageKey) private var appearance: AppAppearance = .system
     @State private var signIn: SignInView.Mode?
     @State private var editing = false
     @State private var showingAbout = false
@@ -89,6 +90,18 @@ struct ProfileView: View {
                     }
                 } header: {
                     Text("Your parks")
+                }
+
+                Section {
+                    Picker("Appearance", selection: $appearance) {
+                        ForEach(AppAppearance.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("System follows your phone's light or dark setting.")
                 }
 
                 Section("OpenCourt") {

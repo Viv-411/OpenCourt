@@ -6,6 +6,7 @@ struct RootView: View {
     @Environment(EventsStore.self) private var events
     @Environment(SiteStore.self) private var sites
     @AppStorage("hasSeenWelcome") private var hasSeenWelcome = false
+    @AppStorage(AppAppearance.storageKey) private var appearance: AppAppearance = .system
     @State private var tab: Tab = Tab(rawValue: AppConfig.argument("-tab") ?? "") ?? .courts
 
     enum Tab: String { case courts, events, you }
@@ -22,6 +23,8 @@ struct RootView: View {
                 .tabItem { Label("You", systemImage: "person.crop.circle") }
                 .tag(Tab.you)
         }
+        .onAppear { appearance.apply() }
+        .onChange(of: appearance) { _, new in new.apply() }
         .task {
             session.start()
             async let parks: Void = sites.loadSites()
