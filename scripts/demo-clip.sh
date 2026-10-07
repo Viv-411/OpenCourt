@@ -29,7 +29,7 @@ START=$(( $(date +%s) + 8 ))
 PYTHONUNBUFFERED=1 uv run opencourt replay --tracks "data/footage/$NAME.tracks.jsonl" \
     -c "data/configs/$NAME.yaml" --realtime --publish --lights none --start-at "$START" &
 REPLAY=$!
-trap 'kill $REPLAY 2>/dev/null' INT TERM EXIT
+trap 'kill $REPLAY 2>/dev/null || true' INT TERM EXIT  # it may already have finished
 while [ "$(date +%s)" -lt "$START" ]; do
     echo "starting in $(( START - $(date +%s) ))..."; sleep 1
 done
