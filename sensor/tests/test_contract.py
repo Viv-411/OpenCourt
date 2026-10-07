@@ -9,7 +9,7 @@ from pathlib import Path
 from opencourt.engine import Engine
 from opencourt.sim import CourtSim, SimParams, sim_config
 
-FIXTURE = Path(__file__).resolve().parents[2] / "backend" / "tests" / "fixtures" / "payload_v1.json"
+FIXTURE = Path(__file__).resolve().parents[2] / "backend" / "tests" / "fixtures" / "payload_v2.json"
 
 
 def sample_payload() -> dict:

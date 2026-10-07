@@ -2,7 +2,8 @@ import OpenCourtKit
 import SwiftUI
 
 /// One court on a park's page. The state is the headline ("In play", "Open", "Time up");
-/// the number is a label. "Line waiting" isn't repeated here: the top of the page says it.
+/// the number is a label; the small print is words ("4 players · 7 min on court"), not
+/// symbols a first-time user has to decode. "Line waiting" is said once, at the top.
 struct CourtCard: View {
     let court: CourtStatus
     let now: Date
@@ -25,15 +26,17 @@ struct CourtCard: View {
                 .foregroundStyle(stateColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-            HStack {
-                PlayerDots(count: court.state == .empty ? 0 : court.players)
-                Spacer()
-                if let detail {
-                    Text(detail)
-                        .font(.caption.weight(.medium).monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
+            if !dimmed, let note = court.movedNote {
+                Label(note, systemImage: "arrow.left.arrow.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.rotating)
+                    .lineLimit(2)
             }
+            Text(dimmed ? "Last known" : court.detailLine(at: now))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .monospacedDigit()
         }
         .padding(14)
         .background(background,
@@ -44,17 +47,6 @@ struct CourtCard: View {
         .animation(.snappy, value: court.state)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
-    }
-
-    /// Minutes on court ("7 min"), not a "7:27" clock that reads like the time of day. Hidden
-    /// when the data isn't live: a stale clock would keep counting up on its own.
-    private var detail: String? {
-        if dimmed { return nil }
-        if let clock = court.clock(at: now) { return WaitFormat.duration(clock) }
-        if court.state == .idle, let s = court.onCourtSeconds {
-            return WaitFormat.duration(TimeInterval(s))
-        }
-        return nil
     }
 
     /// Green means open and amber means time, so "In play" stays neutral.
@@ -92,6 +84,7 @@ struct CourtCard: View {
             parts.append("on court \(WaitFormat.duration(clock)) while others waited")
         }
         if court.light != .off { parts.append("light on") }
+        if let note = court.movedNote { parts.append(note) }
         return parts.joined(separator: ", ")
     }
 }

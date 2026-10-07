@@ -133,13 +133,38 @@ public extension Site {
         }
         if let free = nextFreeSeconds {
             if free < 60 {
-                lines.append(peopleWaiting > 0 ? "A court is open. The people in line go first."
-                                               : "A court is free right now.")
+                // With no wait, whoever is in line could walk on too: the court is just free.
+                let noWait = (waitSeconds ?? 0) < 90
+                lines.append(peopleWaiting > 0 && !noWait
+                             ? "A court is open. The people in line go first."
+                             : "A court is free right now.")
             } else {
                 lines.append("Next court frees up in about \(WaitFormat.duration(TimeInterval(free)))")
             }
         }
         return lines
+    }
+}
+
+public extension CourtStatus {
+    /// The small print on a court's tile, in words a first-time user can read:
+    /// "4 players · 7 min on court", "Nobody playing", "Groups changing over".
+    func detailLine(at now: Date) -> String {
+        switch state {
+        case .empty: return "Nobody playing"
+        case .rotating: return "Groups changing over"
+        case .unknown: return "Checking the camera"
+        case .idle, .active, .warning, .due:
+            let who = players == 1 ? "1 player" : "\(players) players"
+            guard let on = onCourtSeconds else { return who }
+            let elapsed = TimeInterval(on) + max(0, now.timeIntervalSince(updatedAt))
+            return "\(who) · \(WaitFormat.duration(elapsed)) on court"
+        }
+    }
+
+    /// "From Court 1 · kept their time": a group that just moved over keeps its clock.
+    var movedNote: String? {
+        movedFrom.map { "From Court \($0) · kept their time" }
     }
 }
 

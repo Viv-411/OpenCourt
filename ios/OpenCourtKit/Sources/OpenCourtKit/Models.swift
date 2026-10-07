@@ -126,13 +126,15 @@ public struct CourtStatus: Codable, Sendable, Identifiable, Hashable {
     public var secondsRemaining: Int?
     public var onCourtSeconds: Int?
     public var updatedAt: Date
+    /// The court this group just moved over from (payload version 2), for a couple of minutes.
+    public var movedFrom: Int?
 
     public var id: Int { number }
 
     public init(
         siteID: String, number: Int, state: CourtState, light: LightMode = .off,
         occupancy: Double, clockSeconds: Int? = nil, secondsRemaining: Int? = nil,
-        onCourtSeconds: Int? = nil, updatedAt: Date
+        onCourtSeconds: Int? = nil, updatedAt: Date, movedFrom: Int? = nil
     ) {
         self.siteID = siteID
         self.number = number
@@ -143,6 +145,7 @@ public struct CourtStatus: Codable, Sendable, Identifiable, Hashable {
         self.secondsRemaining = secondsRemaining
         self.onCourtSeconds = onCourtSeconds
         self.updatedAt = updatedAt
+        self.movedFrom = movedFrom
     }
 
     enum CodingKeys: String, CodingKey {
@@ -152,6 +155,7 @@ public struct CourtStatus: Codable, Sendable, Identifiable, Hashable {
         case secondsRemaining = "seconds_remaining"
         case onCourtSeconds = "on_court_seconds"
         case updatedAt = "updated_at"
+        case movedFrom = "moved_from"
     }
 
     /// The backend skips no-op writes, so clocks are extrapolated from the last update.

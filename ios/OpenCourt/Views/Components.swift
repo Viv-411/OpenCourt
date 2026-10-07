@@ -33,24 +33,6 @@ struct LightIndicator: View {
     }
 }
 
-/// Up to four dots for players seen on the court.
-struct PlayerDots: View {
-    let count: Int
-    var capacity = 4
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<max(capacity, count), id: \.self) { i in
-                Circle()
-                    .fill(i < count ? Color.primary.opacity(0.7) : Color.primary.opacity(0.12))
-                    .frame(width: 7, height: 7)
-            }
-        }
-        .accessibilityElement()
-        .accessibilityLabel("\(count) players")
-    }
-}
-
 struct FreshnessBanner: View {
     let freshness: Freshness
     let updatedAt: Date?

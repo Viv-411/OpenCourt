@@ -17,7 +17,7 @@ from .signals import CourtSignal, HeldUpClock, court_signal, rotating
 from .smoothing import RollingMedian, Sustained
 from .types import Health, Observation, Zone
 
-PAYLOAD_VERSION = 1
+PAYLOAD_VERSION = 2  # 2: courts carry moved_from
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +25,7 @@ class CourtSnapshot:
     number: int
     occupancy: float
     signal: CourtSignal
+    moved_from: int | None = None  # the court this group just moved up from (for a while)
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +65,7 @@ class Snapshot:
                     "clock_seconds": r(c.signal.clock_seconds),
                     "seconds_remaining": r(c.signal.seconds_remaining),
                     "on_court_seconds": r(c.signal.on_court_seconds),
+                    "moved_from": c.moved_from,
                 }
                 for c in self.courts
             ],
@@ -198,7 +200,13 @@ class Engine:
     def _evidence(self, court: int, since: float) -> FillEvidence:
         ev = self.ledger.into(court, since)
         before = self.queue_sm.value_at(since - self.cfg.rotation.queue_lookback_seconds)
-        return replace(ev, queue_drop=before - self.queue_sm.value)
+        # Also: people who left the line in the last minute, wherever the court is and however
+        # long it has been empty (comparing with before it emptied misses a court that was
+        # empty from the start).
+        now = self._last_frame_t or since
+        recent = self.queue_sm.peak_since(now - self.cfg.rotation.line_to_court_seconds)
+        now_q = self.queue_sm.value
+        return replace(ev, queue_drop=max(before - now_q, recent - now_q))
 
     def _court_open(self, c: int, t: float) -> bool:
         """No group on it or on its way to it (moving up), and the camera has seen it empty,
@@ -219,9 +227,9 @@ class Engine:
         waiting = self.queue_gate.state
         # Held up: someone is in line (or the line hasn't timed out yet) and there's no open
         # court they could take instead. Same condition the clocks always used, plus that.
+        open_court = health is Health.OK and any(self._court_open(c, t) for c in self.courts)
         self.held.update(t, health is Health.OK
-                         and (waiting or self._line_present)
-                         and not any(self._court_open(c, t) for c in self.courts))
+                         and (waiting or self._line_present) and not open_court)
         courts = []
         for c in self.courts:
             sig = court_signal(
@@ -232,10 +240,19 @@ class Engine:
                 timer=self.cfg.timer,
                 held=self.held,
             )
-            if health is Health.OK and self.line.is_rotating(c):
+            vacancy = self.line.vacancies.get(c)
+            incoming = vacancy is not None and vacancy.incoming is not None
+            # "Changing" only means something while people wait or a group is moving in;
+            # otherwise a court somebody just left is simply open.
+            if health is Health.OK and self.line.is_rotating(c) and (waiting or incoming):
                 sig = rotating(sig)
-            courts.append(CourtSnapshot(c, self.court_sm[c].value, sig))
-        if health is Health.OK:
+            moved = self.line.moved.get(c)
+            moved_from = (moved[0] if moved is not None and self.line.slots.get(c) is moved[2]
+                          and t - moved[1] <= self.cfg.rotation.show_move_seconds else None)
+            courts.append(CourtSnapshot(c, self.court_sm[c].value, sig, moved_from))
+        if open_court:
+            wait = WaitEstimate(0.0, 0.0, 0)  # a court is free: anyone arriving can walk on
+        elif health is Health.OK:
             wait = estimate_wait(
                 [cs.signal.on_court_seconds for cs in courts],
                 self.queue_sm.value,

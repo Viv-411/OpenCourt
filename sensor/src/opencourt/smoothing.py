@@ -33,6 +33,10 @@ class RollingMedian:
     def value(self) -> float:
         return self._smoothed[-1][1] if self._smoothed else 0.0
 
+    def peak_since(self, t: float) -> float:
+        """Highest smoothed value from ``t`` until now."""
+        return max((v for ts, v in self._smoothed if ts >= t), default=self.value)
+
     def value_at(self, t: float) -> float:
         """Smoothed value at the latest sample at or before ``t`` (or the earliest known)."""
         best = None

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "site_id": "sim-site",
   "generated_at": 1790000000.0,
   "health": "ok",
@@ -20,7 +20,8 @@
       "occupancy": 4.0,
       "clock_seconds": 264,
       "seconds_remaining": 936,
-      "on_court_seconds": 264
+      "on_court_seconds": 264,
+      "moved_from": null
     },
     {
       "number": 2,
@@ -29,7 +30,8 @@
       "occupancy": 4.0,
       "clock_seconds": 505,
       "seconds_remaining": 695,
-      "on_court_seconds": 505
+      "on_court_seconds": 505,
+      "moved_from": null
     },
     {
       "number": 3,
@@ -38,7 +40,8 @@
       "occupancy": 4.0,
       "clock_seconds": 650,
       "seconds_remaining": 550,
-      "on_court_seconds": 650
+      "on_court_seconds": 650,
+      "moved_from": null
     },
     {
       "number": 4,
@@ -47,7 +50,8 @@
       "occupancy": 4.0,
       "clock_seconds": 1200,
       "seconds_remaining": 0,
-      "on_court_seconds": 1223
+      "on_court_seconds": 1223,
+      "moved_from": null
     }
   ]
 }

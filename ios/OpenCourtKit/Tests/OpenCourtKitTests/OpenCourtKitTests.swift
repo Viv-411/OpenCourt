@@ -56,11 +56,11 @@ let courtJSON = """
     }
 
     @Test func realSensorPayloadStatesAreKnown() throws {
-        // backend/tests/fixtures/payload_v1.json is produced by the sensor.
+        // backend/tests/fixtures/payload_v2.json is produced by the sensor.
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("backend/tests/fixtures/payload_v1.json")
+            .appendingPathComponent("backend/tests/fixtures/payload_v2.json")
         let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
         for court in json["courts"] as! [[String: Any]] {
             let raw = court["state"] as! String
@@ -149,6 +149,26 @@ let courtJSON = """
             court(1, .active), court(2, .due), court(3, .empty), court(4, .rotating),
         ])
         #expect(snap.courtSummary == "2 in play · 1 open · 1 changing")
+    }
+
+    @Test func aFreeCourtMeansNoWaitEvenWithPeopleInLine() {
+        // People waiting next to an open court (say, for partners) don't make you wait.
+        #expect(site(wait: 0, queue: 2, ahead: 0, nextFree: 0).waitDetails(at: now).last
+                == "A court is free right now.")
+    }
+
+    @Test func courtTilesUseWordsNotSymbols() {
+        let t = now
+        var c = CourtStatus(siteID: "s", number: 2, state: .active, occupancy: 4,
+                            onCourtSeconds: 400, updatedAt: t.addingTimeInterval(-20))
+        #expect(c.detailLine(at: t) == "4 players · 7 min on court")
+        #expect(c.movedNote == nil)
+        c.movedFrom = 1
+        #expect(c.movedNote == "From Court 1 · kept their time")
+        c.state = .empty
+        #expect(c.detailLine(at: t) == "Nobody playing")
+        c.state = .rotating
+        #expect(c.detailLine(at: t) == "Groups changing over")
     }
 
     @Test func detailsSaySeparateThingsPlainly() {

@@ -103,7 +103,7 @@ def test_wrong_version_rejected(db):
     token = register(db)
     as_role(db, "anon")
     with pytest.raises(psycopg.errors.InvalidParameterValue):
-        ingest(db, token, payload(version=2))
+        ingest(db, token, payload(version=3))  # 1 and 2 are known
 
 
 def test_anon_cannot_write_tables_directly(db):
@@ -175,10 +175,32 @@ def test_real_sensor_payload_is_accepted(db):
     """Contract with sensor/src/opencourt/engine.py (fixture from sensor/tests/test_contract.py)."""
     from pathlib import Path
 
-    fixture = Path(__file__).parent / "fixtures" / "payload_v1.json"
+    fixture = Path(__file__).parent / "fixtures" / "payload_v2.json"
     p = json.loads(fixture.read_text())
     token = register(db)
     as_role(db, "anon")
     ingest(db, token, p)
     n = db.execute("select count(*) from public.court_status").fetchone()[0]
     assert n == len(p["courts"])
+
+
+def test_moved_from_is_stored_and_version_1_still_works(db):
+    """Version 2 says which court a group just moved up from; version 1 sensors still work."""
+    from pathlib import Path
+
+    p = json.loads((Path(__file__).parent / "fixtures" / "payload_v2.json").read_text())
+    p["courts"][1]["moved_from"] = 1
+    token = register(db)
+    as_role(db, "anon")
+    ingest(db, token, p)
+    db.execute("reset role")
+    rows = dict(db.execute("select number, moved_from from public.court_status").fetchall())
+    assert rows[2] == 1 and rows[1] is None
+
+    old = {**p, "version": 1, "courts": [{k: v for k, v in c.items() if k != "moved_from"}
+                                         for c in p["courts"]]}
+    as_role(db, "anon")
+    ingest(db, token, old)
+    db.execute("reset role")
+    assert db.execute("select moved_from from public.court_status where number = 2"
+                      ).fetchone()[0] is None

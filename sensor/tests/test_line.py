@@ -117,7 +117,9 @@ def test_silent_shift_when_lower_court_never_looked_empty():
     assert [e.kind for e in events] == [LineEventKind.MOVE, LineEventKind.MOVE,
                                         LineEventKind.ARRIVAL]
     assert clocks(line)[1:] == [400, 300]
-    assert line.slots[1].provisional and line.slots[1].on_since == 1130
+    # They came off the line, so they're a real new group (fresh clock, not a stand-in):
+    # if they leave later, that's a departure.
+    assert not line.slots[1].provisional and line.slots[1].on_since == 1130
 
 
 def test_provisional_court_emptying_is_not_a_departure():

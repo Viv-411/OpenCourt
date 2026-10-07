@@ -186,6 +186,27 @@ xcrun devicectl device process launch --device 00008110-00021D8114EA201E app.ope
   at ~4:10 and back on at ~4:40. Its config compresses all timings ~20x (staged waits are
   ~25 s); real parks use the defaults.
 
+## User decisions (2026-10-07)
+
+- **No wait while a court is open:** the engine reports a 0 wait whenever a court counts as
+  open, even with people in line (they could walk on). The app then says "No wait" and
+  "A court is free right now."
+- **"Changing" only while people wait or a group is moving in;** a court someone left with
+  nobody waiting reads "Open".
+- **The line and the courts are matched by counts, not by following people:** if the line
+  shrank in the last `rotation.line_to_court_seconds` (60) and a group appears on a court,
+  it's them (a fresh clock, the safe reading). The drop must be `line_drop_min_people`
+  (2; 1 in the Final_Test demo, whose camera misses one of the waiting pair). People *seen*
+  stepping up onto a court from below outrank a count that dropped somewhere, so a move is
+  never mistaken for a line arrival. A group that came off the line after a move-up is a real
+  group (not provisional), so its later departure is logged.
+- **Show moves plainly:** payload **version 2** adds `moved_from` per court (migration
+  `20261007000000_payload_v2_moved_from.sql`; version 1 still accepted) for
+  `rotation.show_move_seconds` (120) after a move; the tile reads "From Court 1 · kept their
+  time". Fixture: `backend/tests/fixtures/payload_v2.json`.
+- **Tiles in words, not symbols:** "4 players · 7 min on court", "Nobody playing", "Groups
+  changing over" (`CourtStatus.detailLine`); the player dots are gone.
+
 ## App and community features (2026-09-19)
 
 - Tabs: Courts (live status, busy-times chart, favourites, directions), Events
