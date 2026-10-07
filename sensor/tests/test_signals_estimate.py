@@ -97,3 +97,17 @@ def test_more_courts_means_shorter_waits():
 def test_no_courts():
     w = estimate_wait([], 4, 4, EC)
     assert w.wait_seconds is None
+
+
+def test_held_up_clock_only_counts_held_time():
+    from opencourt.signals import HeldUpClock
+
+    h = HeldUpClock()
+    h.update(0, True)
+    h.update(100, False)  # a court opens
+    h.update(160, True)  # and is taken again
+    assert h.total_at(50) == 50
+    assert h.total_at(130) == 100  # paused, not reset
+    assert h.total_at(200) == 140
+    assert h.between(50, 200) == 90
+    assert h.between(110, 150) == 0

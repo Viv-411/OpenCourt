@@ -179,6 +179,18 @@ The clock only counts time during which someone was waiting. If someone arrives 
 a group is 30 minutes in, that group gets a full threshold's worth of time to finish its
 current game.
 
+**Only while people are held up** (decided 2026-10-06). Someone waiting next to an open
+court isn't being kept off by anyone, so the clock counts only time when someone is waiting
+*and* every court is taken. An open court **pauses** every clock; it doesn't reset them (a
+court empty for a minute mid-changeover mustn't wipe out everyone's time). A court counts
+as open once the camera has seen it empty, without a break, for `open_court_grace_seconds`
+(60 s): shorter gaps are a group moving up or the next group walking on, which the line
+couldn't take anyway, and requiring the camera to *see* it empty means a group the engine
+has merely lost track of (a badly seen far court) can't pause every other court. With the
+pause, `clock` above becomes the held-up time between `max(on_since, waiting_since)` and
+now. Simulator: no change at busy parks (changeovers are quick); it fires only when a
+court genuinely sits open while people wait, which the first staged clip showed.
+
 ### Court states
 
 | State | Condition | Light |
@@ -254,6 +266,13 @@ on early. A group already on court when the system starts gets the full time.
   rule handle it (the simulator tests both ways).
 - The line (queue) zone covers where people wait at the entrance, and touches the path
   onto Court 1.
+- **The camera must see the path from the line onto the courts.** The engine knows a group
+  came off the line by following people across that boundary. In the Final_Test clip the
+  waiting spot was outside the fence and the gate was out of frame, so nobody was ever seen
+  crossing: arrivals fell back to "assumed" (still a fresh clock, which is safe) and a
+  group's departure went unlogged.
+- Zones may run to the edge of the picture (corners within 12 px snap onto it), so people
+  the frame cuts off, often in the line right by the camera, are still counted.
 
 ## 7. Wait estimate
 

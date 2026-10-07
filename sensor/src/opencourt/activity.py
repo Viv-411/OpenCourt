@@ -26,9 +26,11 @@ class FastOccupancy:
         self.expecting: set[int] = set()  # courts a group is known to be walking onto
         self._fill_since: dict[int, float] = {}
         self.empty: dict[int, bool] | None = None
+        self.values: dict[int, float] = {}  # the latest smoothed count per court
 
     def update(self, t: float, counts: dict[int, int]) -> list[tuple[str, int]]:
         values = {c: sm.add(t, counts.get(c, 0)) for c, sm in self._sm.items()}
+        self.values = values
         if self.empty is None:
             self.empty = {c: v < self._fill_at for c, v in values.items()}
             return []

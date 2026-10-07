@@ -11,7 +11,7 @@ import yaml
 from .config import Config
 from .engine import Engine
 from .line import Group, net_departures
-from .signals import court_signal
+from .signals import HeldUpClock, court_signal
 from .sim import CourtSim, SimParams
 from .smoothing import Sustained
 from .types import CourtState, Health
@@ -87,6 +87,13 @@ def evaluate_sim(params: SimParams, cfg: Config, grace_seconds: float = 90.0) ->
     sim = CourtSim(params)
     engine = Engine(cfg, wall_clock=lambda: 0.0)
     oracle_gate = Sustained(cfg.queue.on_seconds, cfg.queue.off_seconds)
+    oracle_held = HeldUpClock()
+    # The engine's rule (a court empty for open_court_grace_seconds is open) applied to truth.
+    # Truth knows the instant a court is free; the engine needs a few seconds to see it
+    # (measured: its light trails truth by at most 10 s, median 5). Like `settle` below,
+    # allow for that lag rather than score it as a false light.
+    open_grace = cfg.timer.open_court_grace_seconds + 15.0
+    truth_open_since: dict[int, float] = {}
     dt = 1.0 / params.fps
 
     false_due = missed_due = oracle_due_total = 0.0
@@ -102,7 +109,18 @@ def evaluate_sim(params: SimParams, cfg: Config, grace_seconds: float = 90.0) ->
 
     for obs, truth in sim.run():
         snap = engine.step(obs)
-        oracle_gate.update(obs.t, truth.queue_people >= cfg.queue.min_people)
+        line_present = truth.queue_people >= cfg.queue.min_people
+        oracle_gate.update(obs.t, line_present)
+        # The engine's rule applied to what really happened: the line is held up only while
+        # every court is truly taken (with one open, whoever waits could walk on).
+        for cs in snap.courts:
+            if truth.slots.get(cs.number) is None:
+                truth_open_since.setdefault(cs.number, obs.t)
+            else:
+                truth_open_since.pop(cs.number, None)
+        oracle_held.update(obs.t, (oracle_gate.state or line_present)
+                           and not any(obs.t - since > open_grace
+                                       for since in truth_open_since.values()))
         for cs in snap.courts:
             tg = truth.slots.get(cs.number)
             gid = tg.gid if tg is not None else None
@@ -111,7 +129,8 @@ def evaluate_sim(params: SimParams, cfg: Config, grace_seconds: float = 90.0) ->
             settled = obs.t - last_change[cs.number][1] > settle
             og = Group(tg.on_since) if tg is not None and tg.on_since is not None else None
             osig = court_signal(og, obs.t, health=Health.OK, waiting=oracle_gate.state,
-                                waiting_since=oracle_gate.since, timer=cfg.timer)
+                                waiting_since=oracle_gate.since, timer=cfg.timer,
+                                held=oracle_held)
             o_due = osig.state is CourtState.DUE
             e_due = cs.signal.state is CourtState.DUE
             if o_due:

@@ -9,7 +9,7 @@
   },
   "wait": {
     "next_free_seconds": 180,
-    "wait_seconds": 1174,
+    "wait_seconds": 1150,
     "groups_ahead": 5
   },
   "courts": [
@@ -17,28 +17,28 @@
       "number": 1,
       "state": "active",
       "light": "off",
-      "occupancy": 2.0,
-      "clock_seconds": 240,
-      "seconds_remaining": 960,
-      "on_court_seconds": 240
+      "occupancy": 4.0,
+      "clock_seconds": 264,
+      "seconds_remaining": 936,
+      "on_court_seconds": 264
     },
     {
       "number": 2,
       "state": "active",
       "light": "off",
       "occupancy": 4.0,
-      "clock_seconds": 482,
-      "seconds_remaining": 718,
-      "on_court_seconds": 482
+      "clock_seconds": 505,
+      "seconds_remaining": 695,
+      "on_court_seconds": 505
     },
     {
       "number": 3,
       "state": "active",
       "light": "off",
       "occupancy": 4.0,
-      "clock_seconds": 626,
-      "seconds_remaining": 574,
-      "on_court_seconds": 626
+      "clock_seconds": 650,
+      "seconds_remaining": 550,
+      "on_court_seconds": 650
     },
     {
       "number": 4,
@@ -47,7 +47,7 @@
       "occupancy": 4.0,
       "clock_seconds": 1200,
       "seconds_remaining": 0,
-      "on_court_seconds": 1200
+      "on_court_seconds": 1223
     }
   ]
 }
