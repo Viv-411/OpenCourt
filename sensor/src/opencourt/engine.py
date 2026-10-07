@@ -77,7 +77,7 @@ class Snapshot:
             self.health,
             round(self.queue_count),
             self.queue_waiting,
-            tuple((c.signal.state, round(c.occupancy)) for c in self.courts),
+            tuple((c.signal.state, round(c.occupancy), c.moved_from) for c in self.courts),
         )
 
 

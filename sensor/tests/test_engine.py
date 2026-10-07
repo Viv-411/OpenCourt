@@ -261,11 +261,14 @@ def test_the_app_is_told_which_court_a_group_moved_up_from():
     s.place(range(5, 9), OUTSIDE)  # court 2's group leaves
     s.run(15)
     s.place(range(1, 5), C2)  # court 1's group moves up
-    s.run(40)
-    assert s.snap.courts[1].moved_from == 1
-    assert s.snap.to_payload("x")["courts"][1]["moved_from"] == 1
-    s.run(150)
-    assert s.snap.courts[1].moved_from is None  # shown for a couple of minutes, then not
+    seen = []
+    for _ in range(60):
+        s.run(1)
+        seen.append(s.snap.courts[1].moved_from)
+    assert 1 in seen  # shown once the move is confirmed...
+    assert s.snap.courts[1].moved_from is None  # ...for a few seconds, then out of the way
+    shown = sum(m == 1 for m in seen)
+    assert 15 <= shown <= 25
 
 
 def test_a_group_that_left_the_line_is_the_group_on_the_open_court():

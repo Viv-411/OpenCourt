@@ -116,8 +116,9 @@ class RotationConfig(_Model):
     # How far the line count must drop for that. At busy parks it wobbles by one, so two; a
     # demo clip whose camera misses one of a waiting pair can use one.
     line_drop_min_people: int = Field(2, ge=1)
-    # How long the app shows "moved up from court N" on the court a group moved onto.
-    show_move_seconds: float = Field(120.0, ge=0)
+    # How long the app shows "from court N" on the court a group moved onto, once the move is
+    # confirmed: long enough to notice, then out of the way.
+    show_move_seconds: float = Field(20.0, ge=0)
     # A track that left the line still counts as coming from the line for this long (people
     # cross the walkway on their way to a court).
     queue_transit_seconds: float = Field(60.0, ge=0)
