@@ -157,6 +157,11 @@ let courtJSON = """
                 == "A court is free right now.")
     }
 
+    @Test func withNobodyInLineTheBigNumberSaysItAll() {
+        // No "next court frees up in about 12 min" under a big "10 min" that means the same.
+        #expect(site(wait: 700, queue: 0, ahead: 0, nextFree: 700).waitDetails(at: now).isEmpty)
+    }
+
     @Test func courtTilesUseWordsNotSymbols() {
         let t = now
         var c = CourtStatus(siteID: "s", number: 2, state: .active, occupancy: 4,
@@ -174,7 +179,7 @@ let courtJSON = """
     @Test func detailsSaySeparateThingsPlainly() {
         #expect(site().waitDetails(at: now) == [
             "5 people in line · 2 groups ahead of you",
-            "Next court frees up in about 4 min",
+            "Next court frees up in about 5 min",  // rounded like the big number
         ])
         // The old "Open court: line's turn" becomes a sentence.
         #expect(site(nextFree: 0).waitDetails(at: now).last

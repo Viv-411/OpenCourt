@@ -138,8 +138,11 @@ public extension Site {
                 lines.append(peopleWaiting > 0 && !noWait
                              ? "A court is open. The people in line go first."
                              : "A court is free right now.")
-            } else {
-                lines.append("Next court frees up in about \(WaitFormat.duration(TimeInterval(free)))")
+            } else if peopleWaiting > 0 {
+                // With nobody in line, the big number already is this; when people wait, say
+                // it too, rounded the same way so the two never disagree.
+                lines.append("Next court frees up in about "
+                             + "\(WaitFormat.roundedMinutes(TimeInterval(free))) min")
             }
         }
         return lines
