@@ -111,10 +111,11 @@ def cmd_detect(args) -> int:
 def cmd_replay(args) -> int:
     from .engine import Engine
     from .lights import make_lights
-    from .publish import NullPublisher
     from .runner import Sinks, run_camera
 
     _, cfg = _load(args)
+    if args.site:
+        cfg = cfg.model_copy(update={"site_id": args.site})
     zones = cfg.require_zones()
     engine = Engine(cfg)
     events_path = Path(args.events) if args.events else None
@@ -134,7 +135,9 @@ def cmd_replay(args) -> int:
     sinks = Sinks(
         lights=make_lights(cfg.lights, args.lights or "console",
                            clock=lambda: engine.last_frame_t or 0.0),
-        publisher=NullPublisher(),
+        # --publish sends snapshots to the backend, as the Pi would: with --realtime, the app
+        # follows a recording live (scripts/demo-clip.sh plays the video alongside).
+        publisher=_publisher(cfg, args.publish),
         events=events_f,
         on_snapshot=on_snapshot,
     )
@@ -143,8 +146,13 @@ def cmd_replay(args) -> int:
         from .trackfile import read
 
         _, frames = read(args.tracks)
+        start = time.monotonic()
         try:
             for obs in frames:
+                if args.realtime:  # keep pace with the recording, frame by frame
+                    delay = start + obs.t - time.monotonic()
+                    if delay > 0:
+                        time.sleep(delay)
                 sinks.handle(engine.step(obs))
         finally:
             sinks.close()
@@ -347,9 +355,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--tracks", help="cached detections from `opencourt detect` (fast)")
     sp.add_argument("--events", help="write line events as JSON lines")
     sp.add_argument("--fps", type=float, help="processing frame rate (default: capture.target_fps)")
-    sp.add_argument("--realtime", action="store_true")
+    sp.add_argument("--realtime", action="store_true", help="play at the recording's speed")
     sp.add_argument("--lights", choices=["none", "console"])
     sp.add_argument("--show", action="store_true")
+    sp.add_argument("--publish", action="store_true", help="send snapshots to the backend")
+    sp.add_argument("--site", help="override site_id (must match the device key's site)")
     sp.set_defaults(func=cmd_replay)
 
     sp = sub.add_parser("simulate", help="run the engine on the synthetic court")
