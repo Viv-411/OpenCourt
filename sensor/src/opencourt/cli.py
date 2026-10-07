@@ -146,6 +146,8 @@ def cmd_replay(args) -> int:
         from .trackfile import read
 
         _, frames = read(args.tracks)
+        if args.start_at:  # everything is loaded: wait for the agreed moment, then go
+            time.sleep(max(0.0, args.start_at - time.time()))
         start = time.monotonic()
         try:
             for obs in frames:
@@ -360,6 +362,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--show", action="store_true")
     sp.add_argument("--publish", action="store_true", help="send snapshots to the backend")
     sp.add_argument("--site", help="override site_id (must match the device key's site)")
+    sp.add_argument("--start-at", type=float,
+                    help="Unix time to start at, so something else (a video) can start with it")
     sp.set_defaults(func=cmd_replay)
 
     sp = sub.add_parser("simulate", help="run the engine on the synthetic court")
