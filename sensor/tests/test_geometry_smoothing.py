@@ -33,6 +33,28 @@ def test_zone_map_prefers_courts_over_queue():
     assert zm.classify((100, 100)) == "other"
 
 
+def test_people_cut_off_by_the_frame_stay_in_their_zone():
+    # Drawn the way people draw: the line's corners stop a few pixels short of the edges.
+    zones = Zones(
+        image_size=(1920, 1080),
+        courts={1: [(100, 100), (1400, 100), (1400, 1076), (100, 1076)]},
+        queue=[(1400, 100), (1915, 100), (1916, 1077), (1400, 1077)],
+    )
+    zm = ZoneMap(zones)
+    # Someone standing in the line right by the camera: the frame cuts them off at the
+    # knees, so their box (and foot point) ends on the bottom edge.
+    assert zm.classify((1700, 1080)) == "queue"
+    assert zm.classify((1919, 900)) == "queue"  # and at the right edge
+    assert zm.classify((800, 1080)) == "court_1"
+    # Corners well inside the picture are left exactly where they were drawn.
+    assert zm.classify((50, 50)) == "other"
+
+
+def test_zones_without_a_size_are_used_as_drawn():
+    zm = ZoneMap(Zones(courts={1: SQUARE}, queue=[(20, 0), (30, 0), (30, 10), (20, 10)]))
+    assert zm.classify((5, 10.5)) == "other"
+
+
 def test_rolling_median_rejects_single_frame_spikes():
     rm = RollingMedian(window=10)
     for i in range(20):
