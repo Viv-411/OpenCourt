@@ -46,10 +46,12 @@ def run(tracks: str, config: str) -> None:
         if snap.queue_waiting != waiting:
             waiting = snap.queue_waiting
             word = "ON " if waiting else "off"
-            print(f"{t:>6}  line waiting {word} ({snap.queue_count:.0f} in line)")
+            w = snap.wait.wait_seconds
+            wait_text = "" if w is None else f", wait {mmss(w)}"
+            print(f"{t:>6}  line waiting {word} ({snap.queue_count:.0f} in line{wait_text})")
         for c in snap.courts:
             sig = c.signal
-            key = (sig.state, sig.light)
+            key = (sig.state, sig.light, c.moved_from)
             if courts.get(c.number) != key:
                 courts[c.number] = key
                 light = "" if sig.light.value == "off" else f"  LIGHT {sig.light.value}"
@@ -57,12 +59,15 @@ def run(tracks: str, config: str) -> None:
                 # the current line has been waiting. A move must carry "on court" over.
                 on = ("" if sig.on_court_seconds is None
                       else f"  on court {mmss(sig.on_court_seconds)}")
+                moved = "" if c.moved_from is None else f"  (moved up from {c.moved_from})"
                 print(f"{t:>6}  court {c.number}: {sig.state.value:<9} "
-                      f"{c.occupancy:.0f} people{on}{clock(sig.clock_seconds)}{light}")
+                      f"{c.occupancy:.0f} people{on}{clock(sig.clock_seconds)}{light}{moved}")
         for e in snap.events:
             where = (f"court {e.from_court} -> {e.court}" if e.from_court
                      else f"court {e.court}")
             note = f"  ({e.note})" if e.note else ""
+            if getattr(e, "assumed", False):
+                note += "  [unconfirmed: fresh clock to be safe]"
             print(f"{t:>6}  ** {e.kind.value.upper()} {where}{note}")
 
 

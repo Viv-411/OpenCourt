@@ -37,6 +37,9 @@ rotation:                     # how court turnover is read (docs/PLAN.md §6)
   turnover_window_seconds: 120
   turnover_check_seconds: 1
   queue_lookback_seconds: 20
+  line_to_court_seconds: 60   # the line shrank this recently + a group appears = them (fresh clock)
+  line_drop_min_people: 2     # by at least this many (line counts wobble by one at busy parks)
+  show_move_seconds: 120      # the app shows "moved up from court N" this long
   queue_transit_seconds: 60   # someone who left the line counts as "from the line" this long
   decide_delay_seconds: 10    # after a court empties, wait this long for crossings before deciding
   decide_lookback_seconds: 30

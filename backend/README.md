@@ -94,6 +94,6 @@ source ../scripts/env.sh
 uv sync && uv run pytest
 ```
 
-`tests/fixtures/payload_v1.json` is a real sensor payload. The sensor's
+`tests/fixtures/payload_v2.json` is a real sensor payload. The sensor's
 `tests/test_contract.py` keeps it current, so any change to the payload format breaks one
 side's tests until the other side is updated.

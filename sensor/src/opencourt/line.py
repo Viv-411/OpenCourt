@@ -74,10 +74,15 @@ class FillEvidence:
     left_line: int = 0  # people who stepped out of the line recently (no identity involved)
     queue_drop: float = 0.0  # smoothed queue length back then minus now
 
-    def off_the_line(self, need: int) -> bool:
+    def off_the_line(self, need: int, line_need: int | None = None) -> bool:
         """Did a group's worth of people come off the line onto this court? Either the same
-        tracks were seen waiting, or that many left the line while that many arrived."""
-        return (self.from_queue >= need or self.queue_drop >= need
+        tracks were seen waiting, or that many left the line while that many arrived.
+        ``line_need`` (default ``need``) is how far the line count must drop."""
+        drop = need if line_need is None else line_need
+        # The line count only says someone went somewhere; people seen stepping up onto this
+        # court from below say who came here. Don't let the first overrule the second.
+        return (self.from_queue >= need
+                or (self.queue_drop >= drop and self.from_below < need)
                 or (self.from_outside >= need and self.left_line >= need))
 
 
@@ -128,6 +133,8 @@ class CourtLine:
         self.cfg = cfg
         self.slots: dict[int, Group | None] = {c: None for c in range(1, court_count + 1)}
         self.vacancies: dict[int, Vacancy] = {}
+        # Court -> (court it moved up from, when, the group), so the app can show the move.
+        self.moved: dict[int, tuple[int, float, Group]] = {}
         self._next_departure = 1
         self._last_change: dict[int, float] = {}
 
@@ -243,6 +250,8 @@ class CourtLine:
 
         if v.incoming is not None:
             self.slots[c] = v.incoming
+            if v.incoming_from is not None:
+                self.moved[c] = (v.incoming_from, t, v.incoming)
             return events  # the MOVE was already reported
 
         need = self.cfg.evidence_min_people
@@ -250,7 +259,7 @@ class CourtLine:
 
         # A new group off the line can take ANY court, not just the bottom one: at small
         # banks people usually walk straight onto whichever court just freed up.
-        if ev.off_the_line(need):
+        if ev.off_the_line(need, self.cfg.line_drop_min_people):
             self.slots[c] = Group(t)
             return events + [LineEvent(LineEventKind.ARRIVAL, t, c)]
 
@@ -283,14 +292,17 @@ class CourtLine:
             i == c or evidence(i, since).from_below >= need
         ):
             self.slots[i] = self.slots[i - 1]
+            self.moved[i] = (i - 1, t, self.slots[i])
             events.append(LineEvent(LineEventKind.MOVE, t, i, from_court=i - 1,
                                     note="seen crossing up"))
             i -= 1
         # Court i's group moved up and someone we can't place took its spot: a new group from
         # the queue if it's court 1 and the line shrank, otherwise unknown (fresh clock).
         ev = evidence(i, since)
-        from_queue = ev.off_the_line(need)
-        self.slots[i] = Group(t, assumed=not from_queue, provisional=True)
+        from_queue = ev.off_the_line(need, self.cfg.line_drop_min_people)
+        # Provisional = maybe just the moving group still finishing its walk. People who came
+        # off the line are a real new group, so their leaving later is a real departure.
+        self.slots[i] = Group(t, assumed=not from_queue, provisional=not from_queue)
         events.append(LineEvent(LineEventKind.ARRIVAL, t, i, assumed=not from_queue,
                                 note="took the court the moving group left"))
         return events

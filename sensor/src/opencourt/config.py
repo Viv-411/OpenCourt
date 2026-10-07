@@ -109,6 +109,15 @@ class RotationConfig(_Model):
     turnover_window_seconds: float = Field(120.0, gt=0)
     turnover_check_seconds: float = Field(1.0, gt=0)
     queue_lookback_seconds: float = Field(20.0, ge=0)
+    # A group that left the line this recently and a group appearing on a court are taken to
+    # be the same people, without following anyone between the two (the path may be out of
+    # the camera's view). Always the safe reading: off the line means a fresh clock.
+    line_to_court_seconds: float = Field(60.0, ge=0)
+    # How far the line count must drop for that. At busy parks it wobbles by one, so two; a
+    # demo clip whose camera misses one of a waiting pair can use one.
+    line_drop_min_people: int = Field(2, ge=1)
+    # How long the app shows "moved up from court N" on the court a group moved onto.
+    show_move_seconds: float = Field(120.0, ge=0)
     # A track that left the line still counts as coming from the line for this long (people
     # cross the walkway on their way to a court).
     queue_transit_seconds: float = Field(60.0, ge=0)

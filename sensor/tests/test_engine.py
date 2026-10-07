@@ -234,3 +234,52 @@ def test_ignore_area_drops_a_post_detected_as_a_person():
     s.place(range(1, 5), C1)
     s.run(60)
     assert s.snap.courts[0].occupancy == 4
+
+
+def test_a_court_someone_just_left_reads_open_when_nobody_waits():
+    s = Scene(Engine(cfg()))
+    s.place(range(1, 5), C1)
+    s.run(60)
+    s.place(range(1, 5), OUTSIDE)
+    s.run(20)
+    assert s.court(1).state is CourtState.EMPTY  # not "changing": nobody is waiting
+
+
+def test_no_wait_while_a_court_is_open():
+    s = Scene(Engine(cfg()))
+    s.place(range(1, 5), C1)  # court 2 stays open
+    s.place(range(20, 22), QUEUE[:2])  # two people wait anyway (say, for partners)
+    s.run(200)
+    assert s.snap.wait.wait_seconds == 0
+
+
+def test_the_app_is_told_which_court_a_group_moved_up_from():
+    s = Scene(Engine(cfg()))
+    s.place(range(1, 5), C1)
+    s.place(range(5, 9), C2)
+    s.run(120)
+    s.place(range(5, 9), OUTSIDE)  # court 2's group leaves
+    s.run(15)
+    s.place(range(1, 5), C2)  # court 1's group moves up
+    s.run(40)
+    assert s.snap.courts[1].moved_from == 1
+    assert s.snap.to_payload("x")["courts"][1]["moved_from"] == 1
+    s.run(150)
+    assert s.snap.courts[1].moved_from is None  # shown for a couple of minutes, then not
+
+
+def test_a_group_that_left_the_line_is_the_group_on_the_open_court():
+    # Nobody is followed from the line to the court (the path is out of view, new IDs
+    # appear): the line shrinking and a group appearing within a minute is enough.
+    e = Engine(cfg())
+    s = Scene(e)
+    s.place(range(1, 5), C1)
+    s.run(60)
+    s.place(range(20, 22), QUEUE[:2])
+    s.run(60)
+    s.remove(range(20, 22))  # they leave the line...
+    s.run(15)
+    s.place(range(30, 32), C2[:2])  # ...and two people turn up on court 2
+    s.run(40)
+    arrivals = [ev for ev in e.event_log if ev.kind.value == "arrival" and ev.court == 2]
+    assert arrivals and not arrivals[-1].assumed
