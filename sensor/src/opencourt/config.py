@@ -121,6 +121,10 @@ class RotationConfig(_Model):
 class TimerConfig(_Model):
     threshold_seconds: float = Field(1200.0, gt=0)
     warning_seconds: float = Field(120.0, ge=0)  # 0 disables the warning pulse
+    # A court empty at least this long is open: whoever waits could take it, so nobody is held
+    # up and every clock pauses (without resetting). Shorter empties are a group moving up a
+    # court or the next group walking on, which the line couldn't have taken anyway.
+    open_court_grace_seconds: float = Field(60.0, ge=0)
 
 
 class EstimateConfig(_Model):

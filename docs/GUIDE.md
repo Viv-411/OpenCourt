@@ -82,7 +82,10 @@ Everything under `ios/` is Swift. `supabase/` is SQL.
      evidence is it the group from below moving up, or the same group back from a break.
    - When unsure, it's a **fresh clock**. Being unsure can delay a light, never cause one.
    - A **quick swap**, where a court never looks empty, is caught from crossings alone.
-6. **Clock and light.** Each group's clock only runs while someone is waiting in line.
+6. **Clock and light.** Each group's clock only runs while people are actually held up:
+   someone is waiting in line *and* every court is taken. If a court sits visibly empty for
+   a minute, whoever is waiting could just walk on, so every clock pauses (and picks up
+   again, not from zero, once it's taken).
    - At 18 minutes the light pulses ("Almost time").
    - At 20 minutes it is solid amber ("Time up").
    - The light turns off while groups are changing, whenever the camera has problems, and

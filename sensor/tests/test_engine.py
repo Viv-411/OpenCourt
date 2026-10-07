@@ -88,6 +88,7 @@ def test_queue_starts_clock_and_light_comes_on():
 def test_short_queue_absence_does_not_reset_clock():
     s = Scene(Engine(cfg()))
     s.place(range(1, 5), C1)
+    s.place(range(5, 9), C2)  # both courts taken, so the line is really held up
     s.run(60)
     s.place(range(20, 24), QUEUE)
     s.run(400)
@@ -130,26 +131,35 @@ def test_rotation_on_court_2_moves_court_1_clock_up():
     assert s.court(1).clock_seconds < 120
 
 
+QUEUE2 = [(30, 200), (70, 200), (30, 300), (70, 300)]
+
+
 def test_light_follows_group_that_moves_up():
     s = Scene(Engine(cfg()))
-    s.place(range(1, 5), C1)  # court 2 empty
+    s.place(range(1, 5), C1)
+    s.place(range(5, 9), C2)
     s.place(range(20, 24), QUEUE)
+    s.place(range(30, 34), QUEUE2)  # a second group behind them in line
     s.run(700)
     assert s.court(1).light is LightMode.SOLID
-    assert s.court(2).state is CourtState.EMPTY
 
-    s.place(range(1, 5), C2)  # the group moves up (court 2 was open)
+    s.place(range(5, 9), OUTSIDE)  # the group above leaves
+    s.run(15)  # (a court empty this briefly is a changeover, not an open court)
+
+    s.place(range(1, 5), C2)  # the lit group moves up
     s.run(8)
     assert s.court(1).state is CourtState.ROTATING  # held off while they walk over
     assert s.court(1).light is LightMode.OFF and s.court(2).light is LightMode.OFF
+    s.place(range(20, 24), C1)  # and the line takes their old court
     s.run(30)
-    assert s.court(2).light is LightMode.SOLID  # the light moved with the group
-    assert s.court(1).light is LightMode.OFF
+    assert s.court(2).light is LightMode.SOLID  # the light (and clock) moved with the group
+    assert s.court(1).light is LightMode.OFF  # the new group's clock is fresh
 
 
 def test_brief_water_break_keeps_the_clock():
     s = Scene(Engine(cfg()))
     s.place(range(1, 5), C1)
+    s.place(range(5, 9), C2)
     s.place(range(20, 24), QUEUE)
     s.run(700)
     assert s.court(1).state is CourtState.DUE
@@ -164,12 +174,43 @@ def test_stale_camera_fails_dark():
     e = Engine(cfg())
     s = Scene(e)
     s.place(range(1, 5), C1)
+    s.place(range(5, 9), C2)
     s.place(range(20, 24), QUEUE)
     s.run(700)
     assert s.court(1).light is LightMode.SOLID
     snap = e.tick(s.t + 30)  # no frames for 30 s
     assert snap.health is Health.DEGRADED
     assert all(c.signal.light is LightMode.OFF for c in snap.courts)
+
+
+def test_no_light_while_a_court_is_open():
+    # People in line could walk onto court 2, so the group on court 1 isn't keeping them off.
+    s = Scene(Engine(cfg()))
+    s.place(range(1, 5), C1)
+    s.place(range(20, 24), QUEUE)
+    s.run(700)
+    assert s.court(1).light is LightMode.OFF
+    assert s.court(1).state is CourtState.ACTIVE  # the line is waiting; the clock isn't running
+    # Only the first minute counted (an empty court that short could be a changeover).
+    assert s.court(1).clock_seconds < 120
+
+
+def test_an_open_court_pauses_clocks_without_resetting_them():
+    s = Scene(Engine(cfg()))
+    s.place(range(1, 5), C1)
+    s.place(range(5, 9), C2)
+    s.place(range(20, 24), QUEUE)
+    s.run(400)
+    before = s.court(1).clock_seconds
+    s.place(range(5, 9), OUTSIDE)  # court 2's group leaves, and nobody takes it for a while
+    s.run(200)
+    paused = s.court(1).clock_seconds
+    assert paused <= before + 90  # counted only the first minute or so (could be a changeover)
+    s.place(range(40, 44), C2)  # a new group takes court 2
+    s.run(60)
+    after = s.court(1).clock_seconds
+    assert after >= paused + 40  # running again, from where it stopped, not from zero
+    assert after <= before + 160  # and most of the 200 s open spell wasn't counted
 
 
 def test_payload_contains_no_track_ids_or_positions():

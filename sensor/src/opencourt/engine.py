@@ -13,7 +13,7 @@ from .crossings import CrossingDetector
 from .estimate import WaitEstimate, estimate_wait
 from .geometry import ZoneMap
 from .line import CourtLine, FillEvidence, LineEvent
-from .signals import CourtSignal, court_signal, rotating
+from .signals import CourtSignal, HeldUpClock, court_signal, rotating
 from .smoothing import RollingMedian, Sustained
 from .types import Health, Observation, Zone
 
@@ -96,6 +96,9 @@ class Engine:
                                           cfg.tracking.handoff_seconds,
                                           cfg.tracking.excursion_seconds)
         self.queue_gate = Sustained(cfg.queue.on_seconds, cfg.queue.off_seconds)
+        self._line_present = False
+        self.held = HeldUpClock()  # time people in line were kept off by groups playing
+        self._seen_empty_since: dict[int, float] = {}  # camera has seen nobody on it since
         rot = cfg.rotation
         self.fast = FastOccupancy(self.courts, rot.fast_window_seconds, rot.empty_below_people,
                                   cfg.court.occupied_min_people, rot.fill_confirm_seconds,
@@ -156,7 +159,8 @@ class Engine:
             self.court_sm[c].add(t, counts[c])
         queue = self.queue_sm.add(t, queue_raw)
         crossings = self.crossings.update(t, zoned)
-        self.queue_gate.update(t, queue >= self.cfg.queue.min_people)
+        self._line_present = queue >= self.cfg.queue.min_people
+        self.queue_gate.update(t, self._line_present)
 
         occ_min = self.cfg.court.occupied_min_people
         occupied = {c: self.court_sm[c].value >= occ_min for c in self.courts}
@@ -165,6 +169,11 @@ class Engine:
         self.fast.expecting = {c for c, v in self.line.vacancies.items()
                                if v.incoming is not None}
         transitions = self.fast.update(t, counts)
+        for c, v in self.fast.values.items():
+            if v < self.cfg.rotation.empty_below_people:
+                self._seen_empty_since.setdefault(c, t)
+            else:
+                self._seen_empty_since.pop(c, None)
 
         events: list[LineEvent] = []
         if self._health(t) is not Health.WARMING_UP:
@@ -191,9 +200,28 @@ class Engine:
         before = self.queue_sm.value_at(since - self.cfg.rotation.queue_lookback_seconds)
         return replace(ev, queue_drop=before - self.queue_sm.value)
 
+    def _court_open(self, c: int, t: float) -> bool:
+        """No group on it or on its way to it (moving up), and the camera has seen it empty,
+        without a break, long enough that it isn't just mid-changeover.
+
+        The camera has to see it: a court the engine has merely lost track of (a group on a
+        badly seen far court) must not pause every other court's clock."""
+        if self.line.slots.get(c) is not None:
+            return False
+        vacancy = self.line.vacancies.get(c)
+        if vacancy is not None and vacancy.incoming is not None:
+            return False
+        since = self._seen_empty_since.get(c)
+        return since is not None and t - since >= self.cfg.timer.open_court_grace_seconds
+
     def _snapshot(self, t: float, events: tuple[LineEvent, ...]) -> Snapshot:
         health = self._health(t)
         waiting = self.queue_gate.state
+        # Held up: someone is in line (or the line hasn't timed out yet) and there's no open
+        # court they could take instead. Same condition the clocks always used, plus that.
+        self.held.update(t, health is Health.OK
+                         and (waiting or self._line_present)
+                         and not any(self._court_open(c, t) for c in self.courts))
         courts = []
         for c in self.courts:
             sig = court_signal(
@@ -202,6 +230,7 @@ class Engine:
                 waiting=waiting,
                 waiting_since=self.queue_gate.since,
                 timer=self.cfg.timer,
+                held=self.held,
             )
             if health is Health.OK and self.line.is_rotating(c):
                 sig = rotating(sig)

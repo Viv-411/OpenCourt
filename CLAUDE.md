@@ -155,6 +155,18 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
 - Buffalo Grove, IL (BIPA). Test parks with 2, 4, 8, and more courts are available; the
   recommendation is to start with 4.
 
+## User decisions (2026-10-06)
+
+- **No amber while a court is open.** Clocks run only while people are held up: someone
+  waiting AND every court taken. An open court pauses every clock (never resets it). A court
+  is open once the camera has seen it empty continuously for `timer.open_court_grace_seconds`
+  (60 s). See PLAN.md §5. Evaluate changes here with `tools/timeline.py` on real clips as well
+  as the simulator; the simulator's answer key applies the same rule to ground truth.
+- **Demo footage:** `Final_Test.mov` (2026-10-06, in `sensor/data/footage/test 2/`): two
+  courts, the four on court 1 move down to court 2, a pair waits, plays, steps into the line
+  at ~4:10 and back on at ~4:40. Its config compresses all timings ~20x (staged waits are
+  ~25 s); real parks use the defaults.
+
 ## App and community features (2026-09-19)
 
 - Tabs: Courts (live status, busy-times chart, favourites, directions), Events

@@ -46,6 +46,10 @@ timer:
   # Game-end detection may replace this later (docs/PLAN.md §12).
   threshold_seconds: 1200
   warning_seconds: 120        # 0 disables the warning pulse
+  # Clocks only run while people are held up: someone waiting AND every court taken. A court
+  # that has sat empty this long counts as open (the line could walk on), so clocks pause
+  # until it's taken. Shorter gaps are groups moving up or walking on during a changeover.
+  open_court_grace_seconds: 60
 
 estimate:
   typical_game_seconds: 900   # PLACEHOLDER: set to the measured median game length
