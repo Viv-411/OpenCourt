@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Draw zones on a recording, replay it through the engine, and open the annotated result.
 #
-#   scripts/review-clip.sh <video filename in sensor/data/footage/> <number of courts> [--skip-draw]
+#   scripts/review-clip.sh <video in sensor/data/footage/, e.g. "test 2/clip.mov"> <courts> [--skip-draw]
 #
 # Everything it writes goes under sensor/data/ (git-ignored, never uploaded).
 set -euo pipefail
@@ -9,7 +9,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/env.sh"
 cd "$ROOT/sensor"
 
-VIDEO="data/footage/$(basename "${1:?video filename}")"
+ARG="${1:?video: a file in sensor/data/footage/, or a path under it}"
+if [[ -f "data/footage/$ARG" ]]; then VIDEO="data/footage/$ARG"   # subfolders work too
+elif [[ -f "$ARG" ]]; then VIDEO="$ARG"
+else VIDEO="data/footage/$(basename "$ARG")"; fi
 COURTS="${2:?number of courts}"
 SKIP_DRAW="${3:-}"
 NAME="$(basename "${VIDEO%.*}")"
@@ -40,7 +43,8 @@ fi
 
 if [[ ! -f "$TRACKS" ]]; then
   echo "== Finding people in the video (one time, about a third of the clip's length) =="
-  uv run opencourt detect "$VIDEO" --fps 10 --imgsz 1280 --conf 0.2 --device mps
+  # --out: detect writes next to the video by default, which is a subfolder for some clips.
+  uv run opencourt detect "$VIDEO" --fps 10 --imgsz 1280 --conf 0.2 --device mps --out "$TRACKS"
 fi
 
 echo "== Replaying =="
