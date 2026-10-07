@@ -177,6 +177,21 @@ uv run opencourt evaluate --labels labels/clip.yaml --events data/clip.events.js
 The detector has already been checked on a sample image: it found 4 people with stable
 IDs, at about 25 FPS on this Mac.
 
+### Showing it to people (the side-by-side demo)
+
+Open the app on your phone at **OpenCourt Demo**, then on the Mac:
+
+```bash
+cd ~/Developer/OpenCourt && scripts/demo-clip.sh          # --plain for the video without boxes
+```
+
+QuickTime plays the annotated `Final_Test` clip and, at the same moment, the engine replays
+it live to the demo park, so the app changes as the people in the video move: the line
+filling, the four moving down a court with their clock, you two leaving and coming back with
+a fresh one. The clip's timings are sped up about 20x (say so). It shows no amber light,
+because a court was open during both waits; use the Simulator park for that. The first run,
+allow Terminal to control QuickTime when macOS asks.
+
 ### Will a Raspberry Pi keep up?
 
 The bar (PLAN §8) is **8 frames per second** from the detector and tracker; below that,

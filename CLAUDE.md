@@ -93,6 +93,17 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
   -destination 'platform=iOS Simulator,name=iPhone 17' build
 # app launch args: -demo, -skipWelcome, -signedIn (demo), -tab courts|events|you,
 #   -view list|map, -openSite <id>, -openEvent <n>, -newEvent, -demoMinutes <n>
+
+scripts/review-clip.sh "test 2/clip.mov" 2         # draw zones, replay, render annotated video
+uv run python tools/timeline.py data/footage/clip.tracks.jsonl -c data/configs/clip.yaml
+scripts/demo-clip.sh                               # video + app side by side (see "Demo")
+
+# the dev iPhone 14 (plugged in): build, install, launch
+cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
+  -destination 'id=00008110-00021D8114EA201E' -allowProvisioningUpdates build
+xcrun devicectl device install app --device 00008110-00021D8114EA201E \
+  ~/Library/Developer/Xcode/DerivedData/OpenCourt-*/Build/Products/Debug-iphoneos/OpenCourt.app
+xcrun devicectl device process launch --device 00008110-00021D8114EA201E app.opencourt.OpenCourt
 ```
 
 ## Engineering conventions
@@ -133,6 +144,14 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
 - The Python sandbox blocks `multiprocessing` pools. For parallel simulator runs, use
   separate processes (`xargs -P`).
 - The GitHub remote is `origin` → https://github.com/Viv-411/OpenCourt.git (branch `main`).
+  The repo is public (GitHub Pages serves `web/` from the `gh-pages` branch).
+- **Dev iPhone:** "Vivek's Old iPhone 14" (UDID 00008110-00021D8114EA201E), signing team
+  `FP2924HV24` (Apple Development identity). Debug builds from a free team expire after 7 days:
+  rebuild and reinstall with the commands above.
+- **SSH key for the Pi:** `~/.ssh/id_ed25519` (created 2026-09-24, comment `opencourt-mac`). Its
+  public half is embedded in `scripts/pi-setup.sh`, which authorises it on a Pi.
+- Background jobs in this harness are killed after about an hour: run long simulator feeds in
+  the user's own Terminal (the command is in "Demo" below).
 - Supabase project `inkvqajxepcaqjubhfye` (us-west-2) has the schema applied. Keys/tokens live
   in `ios/Config/Secrets.xcconfig` and `sensor/.env` (git-ignored); the DB password is not
   stored anywhere in the repo — ask the user if DDL is needed (connect via the session pooler
@@ -195,8 +214,68 @@ cd ios && xcodebuild -project OpenCourt.xcodeproj -scheme OpenCourt \
   <container>/Library/Preferences/app.opencourt.OpenCourt appearance dark`); a `-appearance`
   launch argument does not reach `@AppStorage` reliably.
 
+## Sign-in and email (2026-09-19 to 09-21)
+
+- Email/password plus **Continue with Google** (Supabase OAuth via ASWebAuthenticationSession,
+  returning to `opencourt://auth/callback`). The `opencourt` URL scheme is in `Info.plist`.
+- Confirmation and password-reset emails use `supabase/templates/*.html` and link to
+  `web/auth/` on GitHub Pages, which hands off to the app (`opencourt://auth/confirm|reset`).
+  Reset links open "Choose a new password" (`NewPasswordView`).
+- Custom SMTP (a Gmail app password) is required to edit templates and lift the 2-emails/hour
+  limit. `scripts/push-auth-config.sh` sets SMTP, templates, subjects, redirect URLs and the
+  Google provider from environment variables only (`DRY_RUN=1` to preview). Keep it plain
+  ASCII: macOS bash 3.2 broke on a `…` after a variable once.
+- `supabase/migrations/20260919010000_google_names.sql`: profiles take Google's `full_name`.
+
+## Raspberry Pi (2026-09-23 to 09-30)
+
+- Goal: the detector and tracker at **8 fps or more** (PLAN §8), NCNN on the CPU.
+- Kit: `scripts/pi-setup.sh` (run at the Pi's keyboard: reports board and OS, turns on SSH,
+  authorises the Mac's key), `scripts/pi-bench.sh` (installs, times the detector on a 3-minute
+  clip, checks the Pi reaches the Mac's answers), tools `make_pi_clip.py`, `pi_bench.py`,
+  `compare_runs.py`. The bundle (clip, NCNN models at 640/480, Mac references) is the
+  git-ignored `sensor/data/pi-bench/`. `ncnn` is in the vision extra; `pnnx` (export only) in dev.
+- Mac reference (M2 CPU, NCNN): 33 fps at 640, 50 at 480; repeated runs byte-identical. 480
+  finds 1.7 people per frame against 3.0 at 640 on this footage (distant players vanish).
+- The detector needs **64-bit** programs: `pi-bench.sh` checks `getconf LONG_BIT`, because 32-bit
+  Raspberry Pi OS on a Pi 4 boots a 64-bit kernel and `uname -m` says aarch64.
+- Status: the user is setting up their dad's old Pi (model not yet known); next step is the
+  `pi-setup.sh` output, then the benchmark over SSH. The plan's board is a Pi 5.
+
+## App design (2026-10-01)
+
+- **The wait is the hero.** Courts list rows read like a weather app's city list: the wait big
+  on the right ("35 / min wait"), name, status and distance quiet on the left; parks with no
+  data show the offline icon. Map pins are price tags showing the wait. A park's page leads
+  with an 84 pt wait and plain sentences ("A court is open. The people in line go first."),
+  then Courts (one-word states, "7 min" not a "7:27" clock, the light only when lit), Busy
+  times, Coming up, About. The amber explanation shows only when a light is on.
+- Wording lives in the kit with tests (`waitDisplay`, `statusLine`, `waitDetails`,
+  `courtSummary`, `CourtState.shortTitle`); `stateWordingIsFactual` covers both titles.
+- Design reviews: screenshot the simulator (`xcrun simctl io <id> screenshot`), and check
+  light and dark mode. Shrinking `xcrun simctl ui <id> content_size` shows more of a long page.
+
+## Demo (2026-10-06)
+
+- `scripts/demo-clip.sh` plays `Final_Test`'s annotated video in QuickTime and, at the same
+  moment, replays its detections in real time (`opencourt replay --realtime --publish`) to the
+  2-court **"OpenCourt Demo"** park (`demo-clip`, migration `20261006000000_demo_clip_site.sql`,
+  its key `OPENCOURT_DEMO_DEVICE_TOKEN` in `sensor/.env`). Open the app on that park first.
+  Remove the park after the presentations (the SQL is in the migration's header).
+- The clip's config compresses timings ~20x; say so when presenting. With the open-court rule
+  this clip shows no amber (a court was open during both waits): show amber with the
+  Simulator park, or film a scene with both courts full.
+- Findings from the clip: zones now snap to the frame edge (people cut off by the frame were
+  lost); a bag hanging on the fence was detected as a person (masked per clip; an automatic
+  "never moves" filter is a good next step); the camera must see the path from the line
+  onto the courts, or arrivals can't be traced to the line (they fall back to "assumed").
+- Simulator park, for testing the app: `cd sensor && uv run opencourt simulate -c
+  config/local.yaml --publish --site sim-site --speed 4 --minutes 480`.
+
 ## Open questions (see PLAN.md §13)
 
 - Light layout: one per court, or a panel at the line?
 - Court layout and numbering at each park; whether there are divider fences.
 - The 8-court case (groups hopping through several open courts) is the known weak spot.
+- Which Pi to use (the dad's old one is being benchmarked; a Pi 5 is the plan's choice).
+- TestFlight (Apple Developer Program, $99/yr) once other people need the app.
