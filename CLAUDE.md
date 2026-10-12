@@ -202,7 +202,7 @@ xcrun devicectl device process launch --device 00008110-00021D8114EA201E app.ope
   group (not provisional), so its later departure is logged.
 - **Show moves plainly:** payload **version 2** adds `moved_from` per court (migration
   `20261007000000_payload_v2_moved_from.sql`; version 1 still accepted) for
-  `rotation.show_move_seconds` (120) after a move; the tile reads "From Court 1 · kept their
+  `rotation.show_move_seconds` (20) after a move; the tile reads "From Court 1 · kept their
   time". Fixture: `backend/tests/fixtures/payload_v2.json`.
 - **Tiles in words, not symbols:** "4 players · 7 min on court", "Nobody playing", "Groups
   changing over" (`CourtStatus.detailLine`); the player dots are gone.
@@ -292,6 +292,24 @@ xcrun devicectl device process launch --device 00008110-00021D8114EA201E app.ope
   onto the courts, or arrivals can't be traced to the line (they fall back to "assumed").
 - Simulator park, for testing the app: `cd sensor && uv run opencourt simulate -c
   config/local.yaml --publish --site sim-site --speed 4 --minutes 480`.
+
+## Sample data for demo videos (2026-10-12)
+
+- `scripts/demo-data.sh seed | live | clear` (`backend/demo_data.py`) fills the **live** project
+  with invented data: 10 parks (real park names, court counts and coordinates in Buffalo Grove,
+  Wheeling, Arlington Heights, Northbrook and Palatine; everything else made up), 32 players
+  (`demo+...@example.com`, nobody can sign in to them), 15 events of every kind, eight weeks of
+  busy-times history, and sign-ups and two organised events for the real "Vivek Bharadwaj" account.
+- While it is loaded, `sim-site` shows as "Green Slopes Park" and `demo-clip` as "Volz Park";
+  `clear` puts "Simulator" and "OpenCourt Demo" back. `seed` only adds; `clear` deletes (it also
+  wipes status and history for the four original parks, none of which has a real sensor yet).
+  **Run `clear` before any real pilot data exists, and never after.**
+- Parks read "offline" after 60 s, so `live` must be running while recording (run it in the
+  user's own Terminal; it asks for the database password). It steps aside for a park someone
+  else is publishing to (the clip replay, the simulator).
+- `scripts/demo-clip.sh --rick-drazner` plays the recorded clip under Rick Drazner Park (its
+  key `OPENCOURT_RICK_DRAZNER_DEMO_TOKEN` is written to `sensor/.env` by `seed`).
+- Say "sample data" in the video: the parks are real places and the numbers are not.
 
 ## Open questions (see PLAN.md §13)
 

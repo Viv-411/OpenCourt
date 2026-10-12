@@ -411,3 +411,14 @@ scripts/test-all.sh --fast   # skip the 2-hour simulations
   engine plays it safe (fresh clocks), which delays some lights.
 - The 20-minute rule will occasionally light a group that is simply having a long first
   game. Game-end detection is how that eventually goes away.
+
+## Sample data for a demo video
+
+```bash
+scripts/demo-data.sh seed    # 10 parks, players, 15 events, busy-times history (asks for the DB password)
+scripts/demo-data.sh live    # leave running while you record: keeps every park live
+scripts/demo-data.sh clear   # remove it all afterwards
+```
+
+None of it is real: the parks are real places, but every count, wait, event and player is
+invented. Say "sample data" when you show it.
