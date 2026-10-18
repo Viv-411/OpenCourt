@@ -161,6 +161,9 @@ xcrun devicectl device process launch --device 00008110-00021D8114EA201E app.ope
 
 - Small, obvious improvements (wording, labels, a confusing display): just make them, don't
   ask. Mention them in the summary.
+- **No Claude attribution in commits or PRs** (2026-10-18): never add a `Co-Authored-By: Claude`
+  line or a "Generated with Claude Code" footer. History was rewritten to remove them, and
+  `.claude/settings.json` turns attribution off.
 
 ## User decisions (2026-09-16)
 
