@@ -10,6 +10,8 @@ data/
 *.png
 !ios/**/*.png
 !docs/**/*.png
+!brand/*.png        # generated logo files, not footage
+!web/brand/*.png
 
 # Local config with secrets
 sensor/config/local*.yaml
