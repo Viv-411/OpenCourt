@@ -6,7 +6,10 @@ enum Theme {
     static let cardRadius: CGFloat = 16
     // Each colour has a lighter shade for dark mode, where the light-mode one sinks into the
     // black. Dark accent: 5:1 as text on a dark card, 3.3:1 under white button text.
-    static let accent = adaptive((0.13, 0.49, 0.40), dark: (0.22, 0.62, 0.50))  // court green
+    static let accent = adaptive((0.06, 0.29, 0.23), dark: (0.21, 0.60, 0.49))  // logo green
+    /// The logo's colours. `ball` is for brand touches only, never for a court state.
+    static let brand = Color(red: 0.04, green: 0.22, blue: 0.17)
+    static let ball = Color(red: 0.81, green: 0.93, blue: 0.20)
     static let amber = Color(red: 0.96, green: 0.62, blue: 0.04)  // bright enough for both
     static let open = adaptive((0.15, 0.62, 0.35), dark: (0.24, 0.70, 0.40))
     static let rotating = adaptive((0.25, 0.52, 0.85), dark: (0.42, 0.66, 0.98))

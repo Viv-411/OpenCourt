@@ -17,7 +17,7 @@ struct WelcomeView: View {
     }
 
     private let pages = [
-        Page(symbol: "sportscourt.fill", color: Theme.accent, title: "See the courts before you go",
+        Page(symbol: "", color: Theme.accent, title: "See the courts before you go",
              body: "Which courts are open, how many people are waiting, and roughly how long "
                  + "you'd wait, live from the park."),
         Page(symbol: "light.beacon.max.fill", color: Theme.amber, title: "Fair turns, no arguments",
@@ -90,12 +90,21 @@ struct WelcomeView: View {
     private func pageView(_ p: Page) -> some View {
         VStack(spacing: 24) {
             Spacer()
-            Image(systemName: p.symbol)
-                .font(.system(size: 64, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 140, height: 140)
-                .background(p.color.gradient, in: Circle())
-                .shadow(color: p.color.opacity(0.35), radius: 20, y: 8)
+            if p.symbol.isEmpty {
+                // the first page introduces the app with its logo
+                Image("BrandMark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 150, height: 150)
+                    .accessibilityLabel("OpenCourt")
+            } else {
+                Image(systemName: p.symbol)
+                    .font(.system(size: 64, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 140, height: 140)
+                    .background(p.color.gradient, in: Circle())
+                    .shadow(color: p.color.opacity(0.35), radius: 20, y: 8)
+            }
             Text(p.title)
                 .font(.title.bold())
                 .multilineTextAlignment(.center)

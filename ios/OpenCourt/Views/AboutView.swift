@@ -6,6 +6,15 @@ struct AboutView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Image("Wordmark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 44)
+                        .frame(maxWidth: .infinity)
+                        .accessibilityLabel("OpenCourt")
+                }
+                .listRowBackground(Color.clear)
                 Section("How it works") {
                     Text("When every court is full, the custom is one game, then rotate. "
                          + "A camera counts people on each court and in line. Each group gets "

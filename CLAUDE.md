@@ -314,10 +314,25 @@ xcrun devicectl device process launch --device 00008110-00021D8114EA201E app.ope
   key `OPENCOURT_RICK_DRAZNER_DEMO_TOKEN` is written to `sensor/.env` by `seed`).
 - Say "sample data" in the video: the parks are real places and the numbers are not.
 
+## Brand (2026-10-22)
+
+- The logo is a heavy C with a lime pickleball in its mouth; the full name puts it in place of
+  the C ("Open" + mark + "ourt", SF Pro Rounded at weight 800). Colours: logo green `#0A372C`,
+  ball lime `#CFEE34`. Amber stays reserved for the "Time up" light; lime is for brand touches
+  only, never a court state.
+- `brand/` holds the vector mark and wordmark (SVG + PNG, green and white) and `brand.py`, the
+  geometry measured from the artwork (`brand_assets.py` regenerates every file and the app
+  icons). App: `AppIcon` (light + dark), `BrandMark` and `Wordmark` image sets, `Theme.brand`,
+  `Theme.ball`; the accent is the logo green. Web pages and email headers use
+  `web/brand/` (the emails load `wordmark-white@2x.png` from GitHub Pages, so publish `web/`
+  before pushing the templates).
+
 ## Open questions (see PLAN.md §13)
 
 - Light layout: one per court, or a panel at the line?
 - Court layout and numbering at each park; whether there are divider fences.
 - The 8-court case (groups hopping through several open courts) is the known weak spot.
-- Which Pi to use (the dad's old one is being benchmarked; a Pi 5 is the plan's choice).
+- Hardware (2026-10-22): the user now plans several low-cost cameras wired (PoE) to one mini PC
+  as the central node, instead of a Raspberry Pi. The sensor reads one camera today; reading
+  several and merging their zones is not built yet.
 - TestFlight (Apple Developer Program, $99/yr) once other people need the app.
