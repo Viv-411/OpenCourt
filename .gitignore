@@ -10,7 +10,8 @@ data/
 *.png
 !ios/**/*.png
 !docs/**/*.png
-!brand/*.png        # generated logo files, not footage
+# generated logo files, not footage
+!brand/*.png
 !web/brand/*.png
 
 # Local config with secrets
